@@ -1,5 +1,7 @@
-./_build/
+/_build/
 Grammar.html
 Main.native
 joos-peephole
 sample.joos.pattern
+.DS_Store
+.merlin
