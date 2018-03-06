@@ -18,6 +18,13 @@ let simulate_eol_before_eof = ref true
 let set_simulate_eol_before_eof = fun (flag :bool) ->
   simulate_eol_before_eof := flag
 
+let entered_curly_bracket = ref false
+
+let reset_lexer = fun () ->
+  simulate_eol_before_eof := true ;
+  entered_curly_bracket := true ;
+  ()
+                          
 }
 
 let newline = ['\n']
@@ -55,8 +62,8 @@ rule scan = parse
 | ")"                {OP_PARAM_RIGHT       (collect_token_pos lexbuf)}
 | "["                {OP_SQUARE_LEFT       (collect_token_pos lexbuf)}
 | "]"                {OP_SQUARE_RIGHT      (collect_token_pos lexbuf)}
-| "{"                {OP_CURLY_LEFT        (collect_token_pos lexbuf)}
-| "}"                {OP_CURLY_RIGHT       (collect_token_pos lexbuf)}
+| "{"                {entered_curly_bracket := true;  OP_CURLY_LEFT(collect_token_pos lexbuf)}
+| "}"                {entered_curly_bracket := false; OP_CURLY_RIGHT(collect_token_pos lexbuf)}
 | "<"                {OP_ANGULAR_LEFT      (collect_token_pos lexbuf)}
 | ">"                {OP_ANGULAR_RIGHT     (collect_token_pos lexbuf)}
 | "="                {OP_ASSIGN            (collect_token_pos lexbuf)}
@@ -125,7 +132,13 @@ rule scan = parse
 (* special characters *)
 | whitespace {scan lexbuf}
 | comment    {scan lexbuf}
-| newline    {update_pos lexbuf; EOL(collect_token_pos lexbuf)}
+| newline
+    {
+      update_pos lexbuf;
+      match !entered_curly_bracket with
+      | false -> EOL(collect_token_pos lexbuf)
+      | true  -> scan lexbuf
+    }
 | eof
     {
       match !simulate_eol_before_eof with

@@ -632,7 +632,7 @@ let make_statement_label = fun end_pos (operand :operand) ->
       | [ name ] -> LiteralLabel {lexical_info = lexical_info ; name = name}
       | _        -> raise (LexicalInfo.raise_error_here lexical_info ""))
   | CaptureName {value = name} ->
-     LiteralLabel {lexical_info = lexical_info ; name = name}
+     CaptureLabel {lexical_info = lexical_info ; name = name}
   | _ -> raise (LexicalInfo.raise_error_here lexical_info "")
      
 let make_statement_block_one_stmt = fun (start_pos, end_pos) (content :string) ->

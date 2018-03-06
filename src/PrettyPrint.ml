@@ -355,8 +355,39 @@ let prettyprint_definition = fun (definition :AST.definition) ->
   in
   write_alternatives_to_buffer alternatives ;
   let alternatives_string = Buffer.contents buffer in
-  Printf.sprintf ".def %s = {%s}" name alternatives_string
-
+  if String.length alternatives_string <= 70 then 
+    Printf.sprintf ".def %s = {%s}" name alternatives_string
+  else
+    let split_regex = Str.regexp ", " in
+    let tokens = Str.split split_regex alternatives_string in
+    let rec print_multipleline = fun (buffer :Buffer.t) (tokens :string list) (len :int)->
+      match tokens with
+      | []           -> let content = Buffer.contents buffer in
+                        if len <> 0 then
+                          [ content ]
+                        else
+                          []
+      | head :: tail -> if (len + String.length head) <= 70 then
+                          if len == 0 then
+                            (Buffer.add_string buffer head ;
+                             print_multipleline buffer tail (String.length head))
+                          else
+                            (Buffer.add_string buffer ", " ;
+                             Buffer.add_string buffer head ;
+                             print_multipleline buffer tail (len + 2 + String.length head))
+                        else
+                          let single_line = Buffer.contents buffer in
+                          let new_buffer = Buffer.create 32 in
+                          Buffer.add_string new_buffer head ;
+                          single_line :: (print_multipleline new_buffer tail (String.length head))
+    in
+    let lines = print_multipleline (Buffer.create 32) tokens 0 in
+    let buffer = Buffer.create 32 in
+    Buffer.add_string buffer (Printf.sprintf ".def %s = {\n" name) ;
+    List.iter (fun str -> Buffer.add_string buffer (Printf.sprintf "    %s\n" str)) lines ;
+    Buffer.add_string buffer "  }" ;
+    Buffer.contents buffer
+  
 let prettyprint_pattern = fun (pattern :AST.pattern) ->
   let buffer = Buffer.create 32 in
   Buffer.add_string buffer (Printf.sprintf ".pattern %s\n" pattern.AST.name) ;
