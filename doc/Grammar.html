@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Grammar</title>
+    <style>
+      .specification td, th{
+          vertical-align: baseline;
+          padding: 0;
+          margin: 0;
+          font-weight: normal;
+      }
+      .specification td {
+          text-align: left;
+      }
+      .specification th {
+          text-align: right;
+          white-space: nowrap;
+      }
+      .specification th::after {
+          content: "\a0::=\a0";
+      }
+      .specification th.bar {
+          text-align: right;
+      }
+      .specification th.bar::after {
+          content: "|\a0";
+      }
+      .rule th, td {
+          padding-top: .5em;
+      }
+      .nonterminal::before {
+          content: "<";
+      }
+      .nonterminal::after {
+          content: ">";
+      }
+      .list::after {
+          content: "*";
+          vertical-align: super;
+          font-size: smaller;
+      }
+      .ne_list::after {
+          content: "+";
+          vertical-align: super;
+          font-size: smaller;
+      }
+      .option::before {
+          content: "[";
+      }
+      .option::after {
+          content: "]";
+      }
+    </style>
+  </head>
+  
+  <body>
+    
+    <table class="specification">
+      
+      <tr class="rule">
+        <th><span class="nonterminal">compilation_unit</span></th>
+        <td><span class="nonterminal">eol</span>
+        <span class="nonterminal">compilation_unit_core</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">compilation_unit_core</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">compilation_unit_core</span></th>
+        <td>EOF</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">pattern</span>
+        <span class="nonterminal">compilation_unit_core</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">schema</span>
+        <span class="nonterminal">compilation_unit_core</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">schema</span></th>
+        <td>KEYWORD_SCHEMA
+        <span class="nonterminal">eol</span>
+        <span class="nonterminal">schema_core</span>
+        KEYWORD_END
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">schema_core</span></th>
+        <td><span class="ne_list"><span class="nonterminal">schema_content</span></span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">schema_content</span></th>
+        <td>NAME
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>KEYWORD_EXTERN
+        NAME
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">pattern_header</span></th>
+        <td>KEYWORD_PATTERN
+        NAME
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">pattern_prelude</span></th>
+        <td><span class="nonterminal">pattern_header</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">pattern_prelude</span>
+        <span class="nonterminal">definition</span>
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">pattern_prelude</span>
+        <span class="nonterminal">precondition</span>
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">pattern_capture</span></th>
+        <td><span class="nonterminal">pattern_prelude</span>
+        <span class="nonterminal">body</span>
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">pattern_capture</span>
+        <span class="nonterminal">body</span>
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">pattern_rewrite</span></th>
+        <td><span class="nonterminal">pattern_capture</span>
+        KEYWORD_ARROW
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">pattern_rewrite</span>
+        <span class="nonterminal">body</span>
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">pattern</span></th>
+        <td><span class="nonterminal">pattern_rewrite</span>
+        KEYWORD_END
+        <span class="nonterminal">eol</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">definition</span></th>
+        <td>KEYWORD_DEFINITION
+        NAME
+        OP_ASSIGN
+        OP_CURLY_LEFT
+        <span class="nonterminal">instructions</span>
+        OP_CURLY_RIGHT</td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">precondition</span></th>
+        <td>KEYWORD_PRECONDITION
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">body</span></th>
+        <td><span class="nonterminal">operand</span>
+        OP_COLON</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_ANGULAR_LEFT
+        OP_SQUARE_LEFT
+        NAME
+        OP_SQUARE_RIGHT
+        OP_ANGULAR_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_ANGULAR_LEFT
+        OP_SQUARE_LEFT
+        NAME
+        OP_SQUARE_RIGHT
+        OP_PLUS
+        OP_ANGULAR_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_ANGULAR_LEFT
+        OP_SQUARE_LEFT
+        NAME
+        OP_SQUARE_RIGHT
+        OP_STAR
+        OP_ANGULAR_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">instruction</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">instruction</span>
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">instruction</span>
+        OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">instruction</span>
+        <span class="nonterminal">expressions_space</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">operand</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expressions_space</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">instruction</span></th>
+        <td>INST_NOP</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_I2C</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_NEW</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_INSTANCEOF</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_CHECKCAST</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IMUL</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_INEG</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IREM</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ISUB</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IDIV</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IADD</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IINC</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_GOTO</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IFEQ</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IFNE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ACMPEQ</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ACMPNE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IFNULL</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IFNONNULL</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPEQ</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPGT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPLT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPLE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPGE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IF_ICMPNE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_IRETURN</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ARETURN</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_RETURN</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ALOAD</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ASTORE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ILOAD</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ISTORE</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_DUP</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_POP</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_SWAP</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_LDC</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_ACONST_NULL</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_GETFIELD</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_PUTFIELD</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_INVOKEVIRTUAL</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>INST_INVOKENONVIRTUAL</td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">instructions</span></th>
+        <td><span class="nonterminal">instruction</span><sup>+</sup><sub>OP_COMMA</sub></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">expression</span></th>
+        <td><span class="nonterminal">operand</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_PARAM_LEFT
+        <span class="nonterminal">expression</span>
+        OP_PARAM_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_PLUS
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_DASH
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_STAR
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_SLASH
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_REM
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_OR
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_AND
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_EQ
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_NE
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_GT
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_LT
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_GE
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_LE
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">extended_expression</span></th>
+        <td><span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>NAME
+        OP_PARAM_LEFT
+        <span class="nonterminal">extended_expressions</span>
+        OP_PARAM_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>NAME
+        OP_PARAM_LEFT
+        OP_PARAM_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_PLUS
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_DASH
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_STAR
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_SLASH
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_REM
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_OR
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_AND
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_EQ
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_NE
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_GT
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_LT
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_GE
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">extended_expression</span>
+        OP_LE
+        <span class="nonterminal">extended_expression</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">extended_expressions</span></th>
+        <td><span class="nonterminal">extended_expression</span><sup>+</sup><sub>OP_COMMA</sub></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">expressions_space</span></th>
+        <td><span class="nonterminal">expression</span>
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT
+        <span class="nonterminal">expression</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT
+        OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td><span class="nonterminal">expression</span>
+        <span class="nonterminal">expressions_space</span></td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>OP_CURLY_LEFT
+        <span class="nonterminal">extended_expression</span>
+        OP_CURLY_RIGHT
+        <span class="nonterminal">expressions_space</span></td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">operand</span></th>
+        <td>OP_SQUARE_LEFT
+        NAME
+        OP_SQUARE_RIGHT</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>NAME</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>STRING</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>METHOD_SPEC</td>
+      </tr>
+      <tr>
+        <th class="bar"></th>
+        <td>NUMERIC</td>
+      </tr>
+      
+      <tr class="rule">
+        <th><span class="nonterminal">eol</span></th>
+        <td><span class="ne_list">EOL</span></td>
+      </tr>
+      
+      
+    </table>
+    
+  </body>
+  
+</html>
