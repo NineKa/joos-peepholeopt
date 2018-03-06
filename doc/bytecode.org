@@ -1,0 +1,70 @@
+* Oracle Java bytecode reference 
+  https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
+
+* Jasmin instruction reference
+  http://jasmin.sourceforge.net/instructions.html
+  
+* Bytecode supported by JOOS
+| Name             | Syntax                    | Stack                                      | Note                                                    | IR | Code |
+|------------------+---------------------------+--------------------------------------------+---------------------------------------------------------+----+------|
+| nop              | nop                       | no change                                  | do nothing                                              | X  | X    |
+| i2c              | i2c                       | ..., value -> ..., result                  | convert int to char                                     | X  | X    |
+| new              | new <class>               | ... -> ..., objectref                      | create new object                                       | X  | X    |
+| instanceof       | instanceof <class>        | ..., objectref -> ..., result              | determine if object is of given type                    | X  | X    |
+| checkcast        | checkcast <class>         | ..., objectref -> ..., objectref           | check whether object is of given type                   | X  | X    |
+| imul             | imul                      | ..., value1, value2 -> ..., result         | result = value1 * value2                                | X  | X    |
+| ineg             | ineg                      | ..., value -> ..., result                  | result = -value                                         | X  | X    |
+| irem             | irem                      | ..., value1, value2 -> ..., result         | result = value1 % value2                                | X  | X    |
+| isub             | isub                      | ..., value1, value2 -> ..., result         | result = value1 - value2                                | X  | X    |
+| idiv             | idiv                      | ..., value1, value2 -> ..., result         | result = value1 / value2                                | X  | X    |
+| iadd             | iadd                      | ..., value1, value2 -> ..., result         | result = value1 + value2                                | X  | X    |
+| iinc             | iinc <index> <const>      | no change                                  | increment local variable by constant                    | X  | X    |
+| goto             | goto <branch>             | no change                                  | branch                                                  | X  | X    |
+| ifeq             | ifeq <branch>             | ..., value -> ...                          | branch if value = 0                                     | X  | X    |
+| ifne             | ifne <branch>             | ..., value -> ...                          | branch if value != 0                                    | X  | X    |
+| if_acmpeq        | if_acmpeq <branch>        | ..., value1, value2 -> ...                 | branch if reference value1 = value2                     | X  | X    |
+| if_acmpne        | if_acmpne <branch>        | ..., value1, value2 -> ...                 | branch if reference value1 != value2                    | X  | X    |
+| ifnull           | ifnull <branch>           | ..., value -> ...                          | branch if reference value is null                       | X  | X    |
+| ifnonnull        | ifnonnull <branch>        | ..., value -> ...                          | branch if reference value is not null                   | X  | X    |
+| if_icmpeq        | if_icmpeq <branch>        | ..., value1, value2 -> ...                 | branch if int value1 = value2                           | X  | X    |
+| if_icmpgt        | if_icmpgt <branch>        | ..., value1, value2 -> ...                 | branch if int value1 > value2                           | X  | X    |
+| if_icmplt        | if_icmplt <branch>        | ..., value1, value2 -> ...                 | branch if int value1 < value2                           | X  | X    |
+| if_icmple        | if_icmple <branch>        | ..., value1, value2 -> ...                 | branch if int value1 <= value2                          | X  | X    |
+| if_icmpge        | if_icmpge <branch>        | ..., value1, value2 -> ...                 | branch if int value1 >= value2                          | X  | X    |
+| if_icmpne        | if_icmpne <branch>        | ..., value1, value2 -> ...                 | branch if int value1 != value2                          | X  | X    |
+| ireturn          | ireturn                   | ..., value -> [empty]                      | return int from method                                  | X  | X    |
+| areturn          | areturn                   | ..., objectref -> [empty]                  | return reference from method                            | X  | X    |
+| return           | return                    | ... -> [empty]                             | return void from method                                 | X  | X    |
+| aload            | aload <index>             | ... -> ..., objectref                      | load reference from local variable                      | X  | X    |
+| astore           | astore <index>            | ..., objectref -> ...                      | store reference into local variable                     | X  | X    |
+| iload            | iload <index>             | ... -> ..., value                          | load int from local variable                            | X  | X    |
+| istore           | istore <index>            | ..., value -> ...                          | store int into local variable                           | X  | X    |
+| dup              | dup                       | ..., value -> ..., value, value            | duplicate the top operand stack value                   | X  | X    |
+| pop              | pop                       | ..., value -> ...                          | pop the top operand stack value                         | X  | X    |
+| swap             | swap                      | ..., value2, value1 -> ..., value1, value2 | swap the top two operand stack values                   | X  | X    |
+| iconst_0         | iconst_0                  | ... -> ..., 0                              | push int 0 constant                                     |    | X    |
+| iconst_1         | iconst_1                  | ... -> ..., 1                              | push int 1 constant                                     |    | X    |
+| iconst_2         | iconst_2                  | ... -> ..., 2                              | push int 2 constant                                     |    | X    |
+| iconst_3         | iconst_3                  | ... -> ..., 3                              | push int 3 constant                                     |    | X    |
+| iconst_4         | iconst_4                  | ... -> ..., 4                              | push int 4 constant                                     |    | X    |
+| iconst_5         | iconst_5                  | ... -> ..., 5                              | push int 5 constant                                     |    | X    |
+| ldc              | ldc <index>               | ... -> ..., value                          | push item from run-time constant pool                   | X  | X    |
+| aconst_null      | aconst_null               | ... -> ..., null                           | push null                                               | X  | X    |
+| getfield         | getfield <field> <type>   | ..., objectref -> ..., value               | fetch field from object                                 | X  | X    |
+| putfield         | putfield <field> <type>   | ..., objectref, value -> ...               | set field in object                                     | X  | X    |
+| invokevirtual    | invokevirtual <method>    | ..., objectref, [arg1, [arg2 ...]] -> ...  | invoke instance method, dispatch based on class         | X  | X    |
+| invokenonvirtual | invokenonvirtual <method> | ..., objectref, [arg1, [arg2 ...]] -> ...  | invoke instance method, constuctor, superclass, private | X  | X    |
+
+* Type signature string specification
+  - Boolean: Z
+  - Byte: B
+  - Char: C
+  - Short: S
+  - Integer: I
+  - Long: J
+  - Float: F
+  - Double: D
+  - Object Reference: L<fully-qualified-class>;
+  - Array: [<element-type-signature>
+  - Method Signature: (<type-signature>*)<return-type-signature>
+    
