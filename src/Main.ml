@@ -46,6 +46,5 @@ let main =
   Lexer.set_simulate_eol_before_eof true ;
   let lexbuf = print_token_scan Lexer.scan in
   let ast = Parser.compilation_unit lexbuf (Lexing.from_channel stdin) in
-  Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit ast)
+  Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast)
   
-   

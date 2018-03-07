@@ -36,7 +36,7 @@ let oct_digit_group_3 = oct_digit oct_digit oct_digit
 let hex_digit_group_2 = hex_digit hex_digit
 let escape_characters = ['a' 'b' 'f' 'n' 'r' 't' 'v' '\\' '\'' '?' '"']
 let escape_sequence = '\\' (escape_characters | oct_digit_group_3 | ('x' hex_digit_group_2))
-let java_string_content = ([^'"' '\\' '\r' '\n'] | escape_sequence)
+let java_string_content = ([^'"' '\\' '\r' '\n'] | escape_sequence)*
 
 let java_numeric = ['+' '-']? ('0' | (['1'-'9']['0'-'9']*))
 

@@ -6,7 +6,8 @@ type type_spec =
   | Integer    
   | Long       
   | Float      
-  | Double     
+  | Double
+  | Void
   | ClassSpec  of (string list)
   | Array      of type_spec  
                 
@@ -140,7 +141,12 @@ let parse_method_spec = fun (spec_string :string) ->
      (try
         let parsed_names = parse_name name in
         let parsed_param_type = parse_type_specs param_type in
-        let parsed_ret_type = parse_type_spec ret_type in
+        let parsed_ret_type =
+          if ret_type = "V" then
+            Void
+          else
+            parse_type_spec ret_type
+        in
         let rec collect_and_return =
           fun (tokens :string list) (namespace_token :string list) ->
           match tokens with
@@ -152,7 +158,7 @@ let parse_method_spec = fun (spec_string :string) ->
         in
         collect_and_return parsed_names []
       with ParseNameAbort(_)     -> raise (ParseMethodSpecAbort spec_string)
-         | ParseTypeSpecAbort(_) -> raise (ParseTypeSpecAbort spec_string))
+         | ParseTypeSpecAbort(_) -> raise (ParseMethodSpecAbort spec_string))
   | _ -> raise (ParseMethodSpecAbort spec_string)
 
 (** @raise CreatASTNodeAbort *)
