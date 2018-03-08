@@ -1,2 +1,2 @@
-true: package(str), debug
+true: package(str), package(ANSITerminal), debug
 "validation": include

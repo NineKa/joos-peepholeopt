@@ -40,11 +40,15 @@ let main =
   let print_content = PrettyPrint.prettyprint_expression ast in 
   Printf.printf "%s\n" print_content 
    *)
-  
-  
   Printf.printf "Start!\n" ;
   Lexer.set_simulate_eol_before_eof true ;
-  let lexbuf = print_token_scan Lexer.scan in
-  let ast = Parser.compilation_unit lexbuf (Lexing.from_channel stdin) in
-  Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast)
+  let terminal = Terminal.new_terminal () in
+  let lexbuf = Terminal.load_new_file terminal "sample.joos.pattern" in
+  try 
+    let _ = Parser.compilation_unit Lexer.scan lexbuf in
+    (*Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast) ;*)
+    Printf.printf "%s\n" (Terminal.get_input_name terminal lexbuf) ;
+    Printf.printf "%s\n" (Buffer.contents (Terminal.get_input_buffer terminal lexbuf)) 
+  with AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
+    (Terminal.raise_warning terminal lexbuf start_pos end_pos what)
   
