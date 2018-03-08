@@ -75,27 +75,46 @@ let tailor_string = fun (buffer :Buffer.t) (start_pos :Lexing.position) (end_pos
   Buffer.add_string buffer post_underline ;
   Buffer.contents buffer
     
-let raise_error = fun (terminal :terminal) (lexbuf :Lexing.lexbuf) (start_pos :Lexing.position) (end_pos :Lexing.position) (info :string) ->
-  let line_number = start_pos.Lexing.pos_lnum + 1 in
-  let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+let raise_error = fun (terminal :terminal) (positions :(Lexing.lexbuf * Lexing.position * Lexing.position) list) (info :string) ->
   let buffer = Buffer.create 32 in
-  Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.red ; ANSITerminal.Bold] "Error") ;
-  Buffer.add_string buffer (Printf.sprintf ": on line %d, start from character at %d:\n" line_number char_number) ;
-  Buffer.add_string buffer (tailor_string (get_input_buffer terminal lexbuf) start_pos end_pos) ;
-  Buffer.add_char buffer '\n' ;
-  Buffer.add_string buffer info ;
-  Printf.eprintf "%s\n" (Buffer.contents buffer) ;
-  ()
+  Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.red ; ANSITerminal.Bold] "%s" "Error") ;
+  Buffer.add_string buffer (Printf.sprintf ": %s\n" info) ;
+  let rec print_code_context = fun (positions :(Lexing.lexbuf * Lexing.position * Lexing.position) list) ->
+    match positions with
+    | (lexbuf, start_pos, end_pos) :: tail ->
+       let file_name = get_input_name terminal lexbuf in
+       let line_number = start_pos.Lexing.pos_lnum in
+       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+       Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+       Buffer.add_string buffer (tailor_string (get_input_buffer terminal lexbuf) start_pos end_pos) ;
+       Buffer.add_char buffer '\n' ;
+       print_code_context tail
+    | []                                   -> ()
+  in
+  print_code_context positions ;
+  Printf.eprintf "%s" (Buffer.contents buffer) 
 
-let raise_warning = fun (terminal :terminal) (lexbuf :Lexing.lexbuf) (start_pos :Lexing.position) (end_pos :Lexing.position) (info :string) ->
-  let line_number = start_pos.Lexing.pos_lnum + 1 in
-  let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+let raise_warning = fun (terminal :terminal) (positions :(Lexing.lexbuf * Lexing.position * Lexing.position) list) (info :string) ->
   let buffer = Buffer.create 32 in
-  Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.yellow ; ANSITerminal.Bold] "Warning") ;
-  Buffer.add_string buffer (Printf.sprintf ": on line %d, start from character at %d:\n" line_number char_number) ;
-  Buffer.add_string buffer (tailor_string (get_input_buffer terminal lexbuf) start_pos end_pos) ;
-  Buffer.add_char buffer '\n' ;
-  Buffer.add_string buffer info ;
-  Buffer.add_string buffer info ;
-  Printf.eprintf "%s\n" (Buffer.contents buffer) ;
-  ()
+  Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.yellow ; ANSITerminal.Bold] "%s" "Warning") ;
+  Buffer.add_string buffer (Printf.sprintf ": %s\n" info) ;
+  let rec print_code_context = fun (positions :(Lexing.lexbuf * Lexing.position * Lexing.position) list) ->
+    match positions with
+    | (lexbuf, start_pos, end_pos) :: tail ->
+       let file_name = get_input_name terminal lexbuf in
+       let line_number = start_pos.Lexing.pos_lnum in
+       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+       Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+       Buffer.add_string buffer (tailor_string (get_input_buffer terminal lexbuf) start_pos end_pos) ;
+       Buffer.add_char buffer '\n' ;
+       print_code_context tail
+    | []                                   -> ()
+  in
+  print_code_context positions ;
+  Printf.eprintf "%s" (Buffer.contents buffer)
+
+let raise_warning_single = fun (terminal :terminal) (lexbuf :Lexing.lexbuf) (start_pos :Lexing.position) (end_pos :Lexing.position) (info :string) ->
+  raise_warning terminal [(lexbuf, start_pos, end_pos)] info
+
+let raise_error_single = fun (terminal :terminal) (lexbuf :Lexing.lexbuf) (start_pos :Lexing.position) (end_pos :Lexing.position) (info :string) ->
+  raise_error terminal [(lexbuf, start_pos, end_pos)] info

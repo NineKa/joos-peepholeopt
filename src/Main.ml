@@ -50,5 +50,5 @@ let main =
     Printf.printf "%s\n" (Terminal.get_input_name terminal lexbuf) ;
     Printf.printf "%s\n" (Buffer.contents (Terminal.get_input_buffer terminal lexbuf)) 
   with AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
-    (Terminal.raise_warning terminal lexbuf start_pos end_pos what)
+    (Terminal.raise_error_single terminal lexbuf start_pos end_pos what)
   
