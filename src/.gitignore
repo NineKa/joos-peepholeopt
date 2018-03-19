@@ -1,4 +1,6 @@
 /_build/
+/_test/
+  
 Grammar.html
 Main.native
 joos-peephole

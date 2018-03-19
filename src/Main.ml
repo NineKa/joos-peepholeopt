@@ -43,12 +43,26 @@ let main =
   Printf.printf "Start!\n" ;
   Lexer.set_simulate_eol_before_eof true ;
   let terminal = Terminal.new_terminal () in
-  let lexbuf = Terminal.load_new_file terminal "sample.joos.pattern" in
-  try 
-    let _ = Parser.compilation_unit Lexer.scan lexbuf in
-    (*Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast) ;*)
-    Printf.printf "%s\n" (Terminal.get_input_name terminal lexbuf) ;
-    Printf.printf "%s\n" (Buffer.contents (Terminal.get_input_buffer terminal lexbuf)) 
-  with AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
-    (Terminal.raise_error_single terminal lexbuf start_pos end_pos what)
-  
+  let lexbuf = Terminal.load_input_channel terminal stdin "*stdin*" in
+  try
+    let ast = Parser.compilation_unit Lexer.scan lexbuf in
+    let _ = WeedingCapturePatternOperands.apply ast in
+    ()
+  with
+  | AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
+     (Terminal.raise_error_single terminal start_pos end_pos what)
+  | ValidationFailed.ValidationFailed (site_list) ->
+     List.iter (fun (site :ValidationFailed.site) ->
+         let {ValidationFailed.reference_sites = reference_sites ;
+              message = message ;
+              serverity = serverity ;
+              _
+             } = site
+         in
+         let report_function = if serverity = ValidationFailed.Error then
+                                 Terminal.raise_error
+                               else
+                                 Terminal.raise_warning
+         in
+         report_function terminal reference_sites message)
+       site_list
