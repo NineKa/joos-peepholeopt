@@ -33,7 +33,8 @@ let print_token_scan = fun (scan :Lexing.lexbuf -> Parser.token) lexbuf ->
   token
 
 open InstructionInfo
-open CollectDefinitions
+open CollectAliasDefinitions
+open CollectCaptureOperands
   
 let main =
   (*
@@ -49,9 +50,10 @@ let main =
   let lexbuf = Terminal.load_input_channel terminal stdin "*stdin*" in
   try
     let ast = Parser.compilation_unit Lexer.scan lexbuf in
-    let _ = WeedingCapturePatternOperands.apply ast in
-    let _ = CollectDefinitions.apply ast in
-    Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast)
+    let alias_definition = CollectAliasDefinitions.apply ast in
+    let _ = CollectCaptureOperands.apply alias_definition ast in
+    CollectAliasDefinitions.user_instruction_alias_definitions_to_string alias_definition
+    |> Printf.printf "%s"
   with
   | AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
      (Terminal.raise_error_single terminal start_pos end_pos what)
