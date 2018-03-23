@@ -44,7 +44,7 @@ let identifier = ['a'-'z' 'A'-'Z' '_' '$']['a'-'z' 'A'-'Z' '0'-'9' '_' '$']*
 let java_name = (identifier '/')* identifier
 
 let java_type_spec_chars = ['a'-'z' 'A'-'Z' '0'-'9' '_' '$' ';' '[']
-let java_method_spec = java_name '/' identifier '(' (java_type_spec_chars)* ')' (java_type_spec_chars)*
+let java_method_spec = java_name '/' (identifier | "<init>") '(' (java_type_spec_chars)* ')' (java_type_spec_chars)*
 
 let comment = ';' [^'\n']*
                    
@@ -128,7 +128,7 @@ rule scan = parse
 | '"' (java_string_content as content) '"' {STRING     (collect_token_pos lexbuf, content)}
 | java_numeric as content                  {NUMERIC    (collect_token_pos lexbuf, int_of_string content)}
 | java_method_spec as content              {METHOD_SPEC(collect_token_pos lexbuf, content)}
-| java_name as content                     {NAME       (collect_token_pos lexbuf, content)}
+| (java_name (';')?) as content            {NAME       (collect_token_pos lexbuf, content)}
 (* special characters *)
 | whitespace {scan lexbuf}
 | comment    {scan lexbuf}

@@ -53,6 +53,8 @@ let main =
     let alias_definition = CollectAliasDefinitions.apply ast in
     let _ = CollectCaptureOperands.apply alias_definition ast in
     CollectAliasDefinitions.user_instruction_alias_definitions_to_string alias_definition
+    |> Printf.printf "%s\n" ;
+    PrettyPrint.prettyprint_compilation_unit_color ast
     |> Printf.printf "%s"
   with
   | AST.CreatASTNodeAbort (start_pos, end_pos, what) ->

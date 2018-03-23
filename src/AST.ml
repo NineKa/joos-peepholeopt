@@ -16,35 +16,42 @@ exception ParseNameAbort of string
 
 (** @raise ParseNameAbort *)  
 let parse_name = fun (name :string) ->
-  let parse_stream = Stream.of_string name in
-  let rec parse_name' = fun () ->
-    let first_char = Stream.peek parse_stream in
-    match first_char with
-    | None    -> []
-    | Some(c) -> let buffer = Buffer.create 16 in
-                 let rec scan_until_first_slash = fun () ->
-                   let first_char = Stream.peek parse_stream in
-                   Stream.junk parse_stream ;
-                   match first_char with
-                   | None      -> ()
-                   | Some('/') -> ()
-                   | Some(c')  -> Buffer.add_char buffer c';
-                                  scan_until_first_slash ()
-                 in
-                 scan_until_first_slash () ;
-                 (Buffer.contents buffer) :: (parse_name' ())               
-  in
-  let name_tokens = parse_name' () in
-  let name_token_regex = Str.regexp "[a-zA-Z_$][a-zA-Z0-9_$]*" in
-  let rec validate_tokens = fun (tokens :string list) ->
-    match tokens with
-    | []           -> []
-    | head :: tail -> if Str.string_match name_token_regex head 0 then
-                        head :: (validate_tokens tail)
-                      else
-                        raise (ParseNameAbort name)
-  in
-  validate_tokens name_tokens
+  let type_descriptor_regex = Str.regexp "^L\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*;" in
+  if Str.string_match type_descriptor_regex name 0 then
+    [name]
+  else
+    let parse_stream = Stream.of_string name in
+    let rec parse_name' = fun () ->
+      let first_char = Stream.peek parse_stream in
+      match first_char with
+      | None    -> []
+      | Some(c) -> let buffer = Buffer.create 16 in
+                   let rec scan_until_first_slash = fun () ->
+                     let first_char = Stream.peek parse_stream in
+                     Stream.junk parse_stream ;
+                     match first_char with
+                     | None      -> ()
+                     | Some('/') -> ()
+                     | Some(c')  -> Buffer.add_char buffer c';
+                                    scan_until_first_slash ()
+                   in
+                   scan_until_first_slash () ;
+                   (Buffer.contents buffer) :: (parse_name' ())               
+    in
+    let name_tokens = parse_name' () in
+    let name_token_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
+    let rec validate_tokens = fun (tokens :string list) ->
+      match tokens with
+      | []           -> []
+      | head :: tail -> if Str.string_match name_token_regex head 0 then
+                          head :: (validate_tokens tail)
+                        else
+                          if head = "<init>" then
+                            head :: (validate_tokens tail)
+                          else
+                            raise (ParseNameAbort name)
+    in
+    validate_tokens name_tokens
 
 (** @raise ParseTypeSpecAbort *)
 let parse_type_specs = fun (spec_string :string) ->
@@ -68,14 +75,14 @@ let parse_type_specs = fun (spec_string :string) ->
                 let rec collect_until_semicolon = fun () ->
                   let first_char' = Stream.peek parse_stream in
                   Stream.junk parse_stream ;
-                   match first_char' with
-                   | None      -> raise (ParseTypeSpecAbort spec_string)
-                   | Some(';') -> (
-                     try Some(ClassSpec(parse_name (Buffer.contents buffer)))
-                     with ParseNameAbort(what) ->
-                       raise (ParseTypeSpecAbort spec_string))
-                   | Some(c')  -> Buffer.add_char buffer c' ;
-                                  collect_until_semicolon ()
+                  match first_char' with
+                  | None      -> raise (ParseTypeSpecAbort spec_string)
+                  | Some(';') -> (
+                    try Some(ClassSpec(parse_name (Buffer.contents buffer)))
+                    with ParseNameAbort(what) ->
+                      raise (ParseTypeSpecAbort spec_string))
+                  | Some(c')  -> Buffer.add_char buffer c' ;
+                                 collect_until_semicolon ()
                 in
                 collect_until_semicolon ()
        | '[' -> (match scan_single_token () with
@@ -113,7 +120,7 @@ module LexicalInfo = struct
   let raise_error_here = fun (lexical_info :t) (message :string) ->
     CreatASTNodeAbort (lexical_info.start_pos, lexical_info.end_pos, message)
 end
-                                                          
+                   
 type method_spec = string list * string * type_spec list * type_spec 
                  
 type operand =
@@ -130,7 +137,7 @@ let get_operand_lexical_info = fun (operand :operand) ->
   | String({lexical_info = lexical_info'; _})      -> lexical_info'
   | Numeric({lexical_info = lexical_info'; _})     -> lexical_info'
   | MethodSpec({lexical_info = lexical_info'; _})  -> lexical_info'
-                 
+                                                    
 exception ParseMethodSpecAbort of string
 
 (** @raise ParseMethodSpecAbort *)
@@ -271,7 +278,7 @@ let rec is_expression_extended = fun (expression :expression) ->
   | _              -> let lhs = get_expression_lhs expression in
                       let rhs = get_expression_rhs expression in
                       (is_expression_extended lhs) || (is_expression_extended rhs)
-                 
+                      
 let get_expression_lexical_info = fun (expression :expression) ->
   match expression with
   | AddExpr({lexical_info = lexical_info'; _})     -> lexical_info'
@@ -329,7 +336,7 @@ let make_expression_div = fun (lhs_expr :expression) (rhs_expr :expression) ->
     DivExpr {lexical_info = lexical_info ; lhs = lhs_expr' ; rhs = rhs_expr'}
   in
   make_expression_binary lhs_expr rhs_expr constructor
-    
+  
 let make_expression_rem = fun (lhs_expr :expression) (rhs_expr :expression) ->
   let constructor = fun lexical_info lhs_expr' rhs_expr' ->
     RemExpr {lexical_info = lexical_info ; lhs = lhs_expr' ; rhs = rhs_expr'}
@@ -397,7 +404,7 @@ let make_expression_invoke = fun (start_pos, end_pos) target_name (operands :exp
     | _          -> raise (LexicalInfo.raise_error_here lexical_info target_name)
   with ParseNameAbort(_) ->
     raise (LexicalInfo.raise_error_here lexical_info target_name)
-      
+       
 type instruction =
   | InstNop              of {lexical_info : LexicalInfo.t}
   | InstI2c              of {lexical_info : LexicalInfo.t}
@@ -486,7 +493,7 @@ let get_instruction_lexical_info = fun (instruction :instruction) ->
   | InstInvokevirtual{lexical_info = lexical_info ; _}    -> lexical_info
   | InstInvokenonvirtual{lexical_info = lexical_info ; _} -> lexical_info
   | InstUserDefined{lexical_info = lexical_info ; _}      -> lexical_info
-                          
+                                                           
 let make_instruction_nop = fun (start_pos, end_pos) ->
   InstNop {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
 
@@ -626,7 +633,7 @@ let get_statement_lexcial_info = fun (statement :statement) ->
   | BlockOneOrMoreStmt {lexical_info = lexical_info; _}  -> lexical_info
   | BlockZeroOrMoreStmt {lexical_info = lexcial_info; _} -> lexcial_info
   | Instruction {lexical_info = lexical_info; _}         -> lexical_info
-                         
+                                                          
 (** @raise CreatASTNodeAbort *)
 let make_statement_label = fun end_pos (operand :operand) ->
   let operand_lexical_info = get_operand_lexical_info operand in
@@ -640,7 +647,7 @@ let make_statement_label = fun end_pos (operand :operand) ->
   | CaptureName {value = name} ->
      CaptureLabel {lexical_info = lexical_info ; name = name}
   | _ -> raise (LexicalInfo.raise_error_here lexical_info "")
-     
+       
 let make_statement_block_one_stmt = fun (start_pos, end_pos) (content :string) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
   try
@@ -781,7 +788,7 @@ let make_definition = fun (start_pos, end_pos) (name :string) (altrs :instructio
     | _ -> raise (LexicalInfo.raise_error_here lexical_info name)
   with ParseNameAbort(what) ->
     raise (LexicalInfo.raise_error_here lexical_info what)
-      
+       
 type pattern =
   {lexical_info     : LexicalInfo.t ;
    name             : string ;
@@ -874,7 +881,7 @@ let make_schema_element_external = fun (start_pos, end_pos) pattern_name ->
   with ParseNameAbort(what) ->
     raise (LexicalInfo.raise_error_here lexical_info what)
 
-          
+       
 type schema =
   {lexical_info : LexicalInfo.t ;
    schema : schema_element list

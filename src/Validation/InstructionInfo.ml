@@ -1,14 +1,5 @@
-type operand_type =
-  | Descriptor
-  | ClassSpec
-  | MethodSpec
-  | FieldSpec
-  | RegisterIndex
-  | BranchReference
-  | Value
-  | IntValue
-  | StringValue
-
+open Type
+   
 type builtin_instruction =
   | Nop         | I2c         | New         | Instanceof  | Checkcast
   | Imul        | Ineg        | Irem        | Isub        | Idiv

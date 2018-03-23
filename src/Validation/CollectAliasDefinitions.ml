@@ -8,7 +8,7 @@ type user_instruction_alias_definition =
   {pattern_name  : string ;
    name          : string ;
    alternatives  : InstructionInfo.builtin_instruction list ;
-   operand_types : InstructionInfo.operand_type list
+   operand_types : Type.operand_type list
   }
 
 open ValidationFailed
@@ -58,6 +58,22 @@ let check_redefination = fun (manager :exception_manager) (pattern :AST.pattern)
       ()
   in List.iter check_if_duplicate defined_names
 
+let check_alias_definition_name_valid = fun (manager :exception_manager) (pattern :AST.pattern) ->
+  let check_single_definition = fun (alias_definition :AST.definition) ->
+    let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
+    if Str.string_match valid_name_regex (alias_definition.AST.name) 0 then
+      ()
+    else
+      let lexical_info = alias_definition.AST.lexical_info in
+      let start_pos = lexical_info.AST.LexicalInfo.start_pos in
+      let end_pos = lexical_info.AST.LexicalInfo.end_pos in
+      {pass_name = pass_id ;
+       reference_sites = [(start_pos, end_pos)] ;
+       message = Printf.sprintf "\"%s\" is not a valid instruction alias name." (alias_definition.AST.name) ;
+       serverity = Error
+      } |> (add_new_exception_site manager)
+  in List.iter check_single_definition pattern.AST.definitions
+   
 let collect_alias_definition = fun (manager :exception_manager) (pattern :AST.pattern) ->
   (* if operands is agreed, None will be return. Otherwise, a exception site will be returned *)
   let check_definition_agreed = fun (definition :AST.definition) ->
@@ -130,6 +146,8 @@ let apply = fun (unit :AST.compilation_unit) ->
     else
       ()
   in
+  List.iter (check_alias_definition_name_valid manager) unit.AST.patterns ;
+  error_checking_barrier () ;
   List.iter (check_redefination manager) unit.AST.patterns ;
   error_checking_barrier () ;
   let alias_definitions = 

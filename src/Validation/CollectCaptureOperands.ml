@@ -11,13 +11,38 @@
 type capture_operand =
   {pattern_name : string ;
    name         : string ;
-   capture_type : InstructionInfo.operand_type
+   capture_type : Type.operand_type
   }
 
 open ValidationFailed
 
 let pass_id = __FILE__
-
+            
+let check_user_defined_instruction_name_valid = fun (manager :exception_manager) (pattern :AST.pattern) ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
+  let check_single_statement = fun (statement :AST.statement) ->
+    match statement with
+    | AST.LiteralLabel (_)                 -> ()
+    | AST.CaptureLabel (_)                 -> ()
+    | AST.BlockOneStmt (_)                 -> ()
+    | AST.BlockOneOrMoreStmt (_)           -> ()
+    | AST.BlockZeroOrMoreStmt (_)          -> ()
+    | AST.Instruction {target = target; _} ->
+       match target with
+       | AST.InstUserDefined {lexical_info = lexical_info; value = value; _} ->
+          if Str.string_match valid_name_regex value 0 then
+            ()
+          else
+            let start_pos = lexical_info.AST.LexicalInfo.start_pos in
+            let end_pos = lexical_info.AST.LexicalInfo.end_pos in
+            {pass_name = pass_id ;
+             reference_sites = [(start_pos, end_pos)] ;
+             message = Printf.sprintf "\"%s\" is not a valid instruction alias name." (value) ;
+             serverity = Error
+            } |> add_new_exception_site manager
+       | _                                                                  -> ()
+  in List.iter check_single_statement pattern.AST.capture_patterns
+   
 let check_user_defined_instruction_bounded = fun
     (manager :exception_manager)
     (alias_definitions :CollectAliasDefinitions.user_instruction_alias_definition list)
@@ -143,7 +168,47 @@ let check_statement_operand_form = fun (manager :exception_manager) (pattern :AS
     | AST.Instruction {operands = operands; _} -> List.iter check_single_expression operands
   in
   List.iter check_single_statement pattern.AST.capture_patterns
-  
+
+let check_capture_name_valid = fun (manager :exception_manager) (pattern :AST.pattern) ->
+  let check_single_statement = fun (statement :AST.statement) ->
+    let check_name = fun (lexical_info :AST.LexicalInfo.t) (name :string) ->
+      let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
+      if Str.string_match valid_name_regex name 0 then
+        ()
+      else
+        let start_pos = lexical_info.AST.LexicalInfo.start_pos in
+        let end_pos = lexical_info.AST.LexicalInfo.end_pos in
+        {pass_name = pass_id ;
+         reference_sites = [(start_pos, end_pos)] ;
+         message = Printf.sprintf "\"%s\" is not a valid name for capture variable." name ;
+         serverity = Error
+        } |> (add_new_exception_site manager)
+    in
+    match statement with
+    | AST.LiteralLabel (_) -> ()
+    | AST.CaptureLabel {lexical_info = lexical_info; name = name; _} ->
+       check_name lexical_info name
+    | AST.BlockOneStmt {lexical_info = lexical_info; name = name; _} ->
+       check_name lexical_info name
+    | AST.BlockOneOrMoreStmt {lexical_info = lexical_info; name = name; _} ->
+       check_name lexical_info name
+    | AST.BlockZeroOrMoreStmt {lexical_info = lexical_info; name = name; _} ->
+       check_name lexical_info name
+    | AST.Instruction {operands = operands; _} ->
+       let check_single_operand = fun (expression :AST.expression) ->
+         match expression with
+         | AST.OperandExpr {operand = operand; _} ->
+            (match operand with
+             | AST.CaptureName {lexical_info = lexical_info; value = value; _} ->
+                check_name lexical_info value
+             | AST.Name (_)       -> ()
+             | AST.String (_)     -> ()
+             | AST.Numeric (_)    -> ()
+             | AST.MethodSpec (_) -> ())
+         | _ -> raise (invalid_arg "perform check_statement_operand_form first.")
+       in List.iter check_single_operand operands
+  in List.iter check_single_statement pattern.AST.capture_patterns
+       
 (** @raise ValidationFailed *)
 let apply = fun
     (alias_definitions :CollectAliasDefinitions.user_instruction_alias_definition list)
@@ -156,9 +221,13 @@ let apply = fun
     else
       ()
   in
+  List.iter (check_user_defined_instruction_name_valid manager) unit.AST.patterns ;
+  error_checking_barrier () ;
   List.iter (check_user_defined_instruction_bounded manager alias_definitions) unit.AST.patterns ;
   error_checking_barrier () ;
   List.iter (check_statement_operand_num manager alias_definitions) unit.AST.patterns ;
   error_checking_barrier () ;
   List.iter (check_statement_operand_form manager) unit.AST.patterns ;
-  error_checking_barrier () 
+  error_checking_barrier () ;
+  List.iter (check_capture_name_valid manager) unit.AST.patterns ;
+  error_checking_barrier ()
