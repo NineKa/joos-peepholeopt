@@ -31,6 +31,9 @@ let print_token_scan = fun (scan :Lexing.lexbuf -> Parser.token) lexbuf ->
   let token = scan lexbuf in
   Printf.printf "%s\n" (PrettyPrint.prettyprint_token token) ;
   token
+
+open InstructionInfo
+open CollectDefinitions
   
 let main =
   (*
@@ -47,7 +50,8 @@ let main =
   try
     let ast = Parser.compilation_unit Lexer.scan lexbuf in
     let _ = WeedingCapturePatternOperands.apply ast in
-    ()
+    let _ = CollectDefinitions.apply ast in
+    Printf.printf "%s" (PrettyPrint.prettyprint_compilation_unit_color ast)
   with
   | AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
      (Terminal.raise_error_single terminal start_pos end_pos what)

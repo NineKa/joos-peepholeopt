@@ -6,8 +6,6 @@
    - capture names
    - method specifications
    Any other forms of operands will be rejected.
-   Note: We defer the validation of the type and number of operands to other
-         weeding passes
  *)
 
 open ValidationFailed
