@@ -32,45 +32,45 @@ let print_token_scan = fun (scan :Lexing.lexbuf -> Parser.token) lexbuf ->
   Printf.printf "%s\n" (PrettyPrint.prettyprint_token token) ;
   token
 
-open InstructionInfo
-open CollectAliasDefinitions
-open CollectCaptureOperands
-  
+open PassFailed
+open WeedingDuplicatePatternName
+
 let main =
   (*
-  Lexer.set_simulate_eol_before_eof false ;
+  Lexer.set_simulate_eol_before_eof true ;
   let scanner = print_token_scan Lexer.scan in
-  let ast = Parser.extended_expression_debug scanner (Lexing.from_string operand_string) in
-  let print_content = PrettyPrint.prettyprint_expression ast in 
+  let ast = Parser.compilation_unit scanner (Lexing.from_channel stdin) in
+  let print_content = PrettyPrint.prettyprint_compilation_unit_color ast in 
   Printf.printf "%s\n" print_content 
    *)
-  Printf.printf "Start!\n" ;
+
+  Printf.printf "Start...\n" ;
   Lexer.set_simulate_eol_before_eof true ;
   let terminal = Terminal.new_terminal () in
   let lexbuf = Terminal.load_input_channel terminal stdin "*stdin*" in
   try
+    Printf.printf "Parsing...\n" ;
     let ast = Parser.compilation_unit Lexer.scan lexbuf in
-    let alias_definition = CollectAliasDefinitions.apply ast in
-    let _ = CollectCaptureOperands.apply alias_definition ast in
-    CollectAliasDefinitions.user_instruction_alias_definitions_to_string alias_definition
-    |> Printf.printf "%s\n" ;
+    Printf.printf "Weeding...\n" ;
+
+    WeedingDuplicatePatternName.apply ast ;
+
     PrettyPrint.prettyprint_compilation_unit_color ast
     |> Printf.printf "%s"
   with
   | AST.CreatASTNodeAbort (start_pos, end_pos, what) ->
-     (Terminal.raise_error_single terminal start_pos end_pos what)
-  | ValidationFailed.ValidationFailed (site_list) ->
-     List.iter (fun (site :ValidationFailed.site) ->
-         let {ValidationFailed.reference_sites = reference_sites ;
-              message = message ;
-              serverity = serverity ;
-              _
-             } = site
-         in
-         let report_function = if serverity = ValidationFailed.Error then
-                                 Terminal.raise_error
-                               else
-                                 Terminal.raise_warning
-         in
-         report_function terminal reference_sites message)
-       site_list
+    (Terminal.raise_error_single terminal start_pos end_pos what)
+  | PassFailed.PassFailed (exception_sites) ->
+    List.iter
+      (fun
+        {PassFailed.pass_name = pass_name ;
+         PassFailed.reference_sites = reference_sites ;
+         PassFailed.message = message ;
+         PassFailed.serverity = serverity 
+        } ->
+        if serverity = PassFailed.Warning then
+          Terminal.raise_warning terminal reference_sites message
+        else
+          Terminal.raise_error terminal reference_sites message)
+      exception_sites
+

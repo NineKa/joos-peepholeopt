@@ -1,5 +1,5 @@
 module InputBufferMap = Map.Make(struct type t = int let compare = compare end)
-                      
+
 type terminal =
   {mutable buffer_map         : (Buffer.t) InputBufferMap.t ;
    mutable name_map           : string InputBufferMap.t ;
@@ -11,7 +11,7 @@ let new_terminal = fun () ->
    name_map = InputBufferMap.empty ;
    buffer_num_counter = 0
   }
-  
+
 let load_input_channel = fun (terminal :terminal) (in_channel :in_channel) (name :string) ->
   let allocated_number = terminal.buffer_num_counter in
   terminal.buffer_num_counter <- terminal.buffer_num_counter + 1 ;
@@ -33,10 +33,10 @@ let load_input_channel = fun (terminal :terminal) (in_channel :in_channel) (name
   let lexbuf = Lexing.from_function refill_function in
   lexbuf.Lexing.lex_curr_p <-
     {lexbuf.Lexing.lex_curr_p with
-      pos_fname = string_of_int allocated_number
+     pos_fname = string_of_int allocated_number
     } ;
   lexbuf
-  
+
 let load_new_file = fun (terminal :terminal) (path :string) ->
   let file_in_channel = open_in path in
   load_input_channel terminal file_in_channel path
@@ -54,14 +54,14 @@ let get_input_buffer_from_position = fun (terminal :terminal) (lexing_pos :Lexin
   try
     InputBufferMap.find allocated_number buffer_map
   with Not_found -> raise (invalid_arg "Lexingbuf seems not managed by such terminal.")
-    
+
 let get_input_name = fun (terminal :terminal) (lexbuf :Lexing.lexbuf) ->
   let allocated_number = int_of_string (lexbuf.Lexing.lex_curr_p.pos_fname) in
   let name_map = terminal.name_map in
   try
     InputBufferMap.find allocated_number name_map
   with Not_found -> raise (invalid_arg "Lexingbuf seems not managed by such terminal.")
-  
+
 let get_input_name_from_position = fun (terminal :terminal) (lexing_pos :Lexing.position) ->
   let allocated_number = int_of_string lexing_pos.pos_fname in
   let name_map = terminal.name_map in
@@ -74,10 +74,10 @@ let tailor_string = fun (buffer :Buffer.t) (start_pos :Lexing.position) (end_pos
     if not (pos < String.length content) then
       String.length content
     else
-      if String.get content pos = '\n' then
-        pos
-      else
-        find_next_bol content (pos + 1)
+    if String.get content pos = '\n' then
+      pos
+    else
+      find_next_bol content (pos + 1)
   in
   let content = Buffer.contents buffer in
   let start_char_pos = start_pos.Lexing.pos_cnum in
@@ -92,7 +92,7 @@ let tailor_string = fun (buffer :Buffer.t) (start_pos :Lexing.position) (end_pos
   Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.Underlined] "%s" in_underline) ;
   Buffer.add_string buffer post_underline ;
   Buffer.contents buffer
-    
+
 let raise_error = fun (terminal :terminal) (positions :(Lexing.position * Lexing.position) list) (info :string) ->
   let buffer = Buffer.create 32 in
   Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.red ; ANSITerminal.Bold] "%s" "Error") ;
@@ -100,14 +100,14 @@ let raise_error = fun (terminal :terminal) (positions :(Lexing.position * Lexing
   let rec print_code_context = fun (positions :(Lexing.position * Lexing.position) list) ->
     match positions with
     | (start_pos, end_pos) :: tail ->
-       assert (start_pos.pos_fname = end_pos.pos_fname) ;
-       let file_name = get_input_name_from_position terminal start_pos in
-       let line_number = start_pos.Lexing.pos_lnum in
-       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
-       Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
-       Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
-       Buffer.add_char buffer '\n' ;
-       print_code_context tail
+      assert (start_pos.pos_fname = end_pos.pos_fname) ;
+      let file_name = get_input_name_from_position terminal start_pos in
+      let line_number = start_pos.Lexing.pos_lnum in
+      let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+      Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+      Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
+      Buffer.add_char buffer '\n' ;
+      print_code_context tail
     | []                                   -> ()
   in
   print_code_context positions ;
@@ -120,14 +120,14 @@ let raise_warning = fun (terminal :terminal) (positions :(Lexing.position * Lexi
   let rec print_code_context = fun (positions :(Lexing.position * Lexing.position) list) ->
     match positions with
     | (start_pos, end_pos) :: tail ->
-       assert (start_pos.pos_fname = end_pos.pos_fname) ;
-       let file_name = get_input_name_from_position terminal start_pos in
-       let line_number = start_pos.Lexing.pos_lnum in
-       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
-       Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
-       Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
-       Buffer.add_char buffer '\n' ;
-       print_code_context tail
+      assert (start_pos.pos_fname = end_pos.pos_fname) ;
+      let file_name = get_input_name_from_position terminal start_pos in
+      let line_number = start_pos.Lexing.pos_lnum in
+      let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
+      Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+      Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
+      Buffer.add_char buffer '\n' ;
+      print_code_context tail
     | []                                   -> ()
   in
   print_code_context positions ;

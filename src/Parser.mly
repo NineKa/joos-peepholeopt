@@ -18,13 +18,12 @@ KEYWORD_ARROW KEYWORD_SCHEMA KEYWORD_EXTERN
 (* literals *)
 %token <(Lexing.position * Lexing.position) * string> STRING
 %token <(Lexing.position * Lexing.position) * string> METHOD_SPEC
-%token <(Lexing.position * Lexing.position) * string> NAME
+%token <(Lexing.position * Lexing.position) * string> NAME CAPTURE_NAME
 %token <(Lexing.position * Lexing.position) * int>    NUMERIC
 
 (* operators *)
 %token <(Lexing.position * Lexing.position)>
 (* ( *) OP_PARAM_LEFT   (* ) *) OP_PARAM_RIGHT
-(* [ *) OP_SQUARE_LEFT  (* ] *) OP_SQUARE_RIGHT
 (* { *) OP_CURLY_LEFT   (* } *) OP_CURLY_RIGHT
 (* < *) OP_ANGULAR_LEFT (* > *) OP_ANGULAR_RIGHT
 (* = *) OP_ASSIGN
@@ -137,25 +136,25 @@ body: operand OP_COLON
       let (_, end_pos) = $2 in
       AST.make_statement_label end_pos $1
     }
-  | OP_ANGULAR_LEFT OP_SQUARE_LEFT NAME OP_SQUARE_RIGHT OP_ANGULAR_RIGHT
+  | OP_ANGULAR_LEFT CAPTURE_NAME OP_ANGULAR_RIGHT
     {
       let (start_pos, _) = $1 in
-      let (_, end_pos) = $5 in
-      let ((_, _), content) = $3 in
+      let (_, end_pos) = $3 in
+      let ((_, _), content) = $2 in
       AST.make_statement_block_one_stmt (start_pos, end_pos) content
     }
-  | OP_ANGULAR_LEFT OP_SQUARE_LEFT NAME OP_SQUARE_RIGHT OP_PLUS OP_ANGULAR_RIGHT
+  | OP_ANGULAR_LEFT CAPTURE_NAME OP_PLUS OP_ANGULAR_RIGHT
     {
       let (start_pos, _) = $1 in
-      let (_, end_pos) = $6 in
-      let ((_, _), content) = $3 in
+      let (_, end_pos) = $4 in
+      let ((_, _), content) = $2 in
       AST.make_statement_block_one_or_more_stmt (start_pos, end_pos) content
     }
-  | OP_ANGULAR_LEFT OP_SQUARE_LEFT NAME OP_SQUARE_RIGHT OP_STAR OP_ANGULAR_RIGHT
+  | OP_ANGULAR_LEFT CAPTURE_NAME OP_STAR OP_ANGULAR_RIGHT
     {
       let (start_pos, _) = $1 in
-      let (_, end_pos) = $6 in
-      let ((_, _), content) = $3 in
+      let (_, end_pos) = $4 in
+      let ((_, _), content) = $2 in
       AST.make_statement_block_zero_or_more_stmt (start_pos, end_pos) content
     }
   | instruction
@@ -298,11 +297,9 @@ expressions_space: expression expression
     { $2 :: $4    }
 ;
 
-operand: OP_SQUARE_LEFT NAME OP_SQUARE_RIGHT
+operand:  CAPTURE_NAME 
     {
-      let (start_pos, _) = $1 in
-      let (_, content)   = $2 in
-      let (end_pos, _)   = $3 in
+      let ((start_pos, end_pos), content) = $1 in
       AST.make_capture_name (start_pos, end_pos) content
     }
   | NAME

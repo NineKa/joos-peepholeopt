@@ -10,15 +10,19 @@ type type_spec =
   | Void
   | ClassSpec  of (string list)
   | Array      of type_spec  
-                
+
 exception ParseTypeSpecAbort of string
 exception ParseNameAbort of string
 
 (** @raise ParseNameAbort *)  
-let parse_name = fun (name :string) ->
-  let type_descriptor_regex = Str.regexp "^L\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*;" in
-  if Str.string_match type_descriptor_regex name 0 then
-    [name]
+let rec parse_name = fun (name :string) ->
+  let type_descriptor_regex_class = Str.regexp "^L\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*;$" in
+  let type_descriptor_regex_array = Str.regexp "^[[]+\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*[;]?$" in
+  if (Str.string_match type_descriptor_regex_class name 0) || (Str.string_match type_descriptor_regex_array name 0) then
+    try
+      let _ = parse_type_spec name in 
+      [ name ]
+    with ParseTypeSpecAbort(_) -> raise (ParseNameAbort name)
   else
     let parse_stream = Stream.of_string name in
     let rec parse_name' = fun () ->
@@ -26,17 +30,17 @@ let parse_name = fun (name :string) ->
       match first_char with
       | None    -> []
       | Some(c) -> let buffer = Buffer.create 16 in
-                   let rec scan_until_first_slash = fun () ->
-                     let first_char = Stream.peek parse_stream in
-                     Stream.junk parse_stream ;
-                     match first_char with
-                     | None      -> ()
-                     | Some('/') -> ()
-                     | Some(c')  -> Buffer.add_char buffer c';
-                                    scan_until_first_slash ()
-                   in
-                   scan_until_first_slash () ;
-                   (Buffer.contents buffer) :: (parse_name' ())               
+        let rec scan_until_first_slash = fun () ->
+          let first_char = Stream.peek parse_stream in
+          Stream.junk parse_stream ;
+          match first_char with
+          | None      -> ()
+          | Some('/') -> ()
+          | Some(c')  -> Buffer.add_char buffer c';
+            scan_until_first_slash ()
+        in
+        scan_until_first_slash () ;
+        (Buffer.contents buffer) :: (parse_name' ())               
     in
     let name_tokens = parse_name' () in
     let name_token_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
@@ -44,17 +48,17 @@ let parse_name = fun (name :string) ->
       match tokens with
       | []           -> []
       | head :: tail -> if Str.string_match name_token_regex head 0 then
-                          head :: (validate_tokens tail)
-                        else
-                          if head = "<init>" then
-                            head :: (validate_tokens tail)
-                          else
-                            raise (ParseNameAbort name)
+          head :: (validate_tokens tail)
+        else
+        if head = "<init>" then
+          head :: (validate_tokens tail)
+        else
+          raise (ParseNameAbort name)
     in
     validate_tokens name_tokens
 
 (** @raise ParseTypeSpecAbort *)
-let parse_type_specs = fun (spec_string :string) ->
+and parse_type_specs = fun (spec_string :string) ->
   let parse_stream = Stream.of_string spec_string in
   let rec scan_single_token = fun () ->
     let first_char = Stream.peek parse_stream in
@@ -62,33 +66,33 @@ let parse_type_specs = fun (spec_string :string) ->
     match first_char with
     | None    -> None
     | Some(c) ->
-       match c with
-       | 'Z' -> Some(Boolean)
-       | 'B' -> Some(Byte)
-       | 'C' -> Some(Char)
-       | 'S' -> Some(Short)
-       | 'I' -> Some(Integer)
-       | 'J' -> Some(Long)
-       | 'F' -> Some(Float)
-       | 'D' -> Some(Double)
-       | 'L' -> let buffer = Buffer.create 32 in
-                let rec collect_until_semicolon = fun () ->
-                  let first_char' = Stream.peek parse_stream in
-                  Stream.junk parse_stream ;
-                  match first_char' with
-                  | None      -> raise (ParseTypeSpecAbort spec_string)
-                  | Some(';') -> (
-                    try Some(ClassSpec(parse_name (Buffer.contents buffer)))
-                    with ParseNameAbort(what) ->
-                      raise (ParseTypeSpecAbort spec_string))
-                  | Some(c')  -> Buffer.add_char buffer c' ;
-                                 collect_until_semicolon ()
-                in
-                collect_until_semicolon ()
-       | '[' -> (match scan_single_token () with
-                 | None    -> raise (ParseTypeSpecAbort spec_string)
-                 | Some(t) -> Some(Array(t)))
-       | _   -> raise (ParseTypeSpecAbort spec_string)
+      match c with
+      | 'Z' -> Some(Boolean)
+      | 'B' -> Some(Byte)
+      | 'C' -> Some(Char)
+      | 'S' -> Some(Short)
+      | 'I' -> Some(Integer)
+      | 'J' -> Some(Long)
+      | 'F' -> Some(Float)
+      | 'D' -> Some(Double)
+      | 'L' -> let buffer = Buffer.create 32 in
+        let rec collect_until_semicolon = fun () ->
+          let first_char' = Stream.peek parse_stream in
+          Stream.junk parse_stream ;
+          match first_char' with
+          | None      -> raise (ParseTypeSpecAbort spec_string)
+          | Some(';') -> (
+              try Some(ClassSpec(parse_name (Buffer.contents buffer)))
+              with ParseNameAbort(what) ->
+                raise (ParseTypeSpecAbort spec_string))
+          | Some(c')  -> Buffer.add_char buffer c' ;
+            collect_until_semicolon ()
+        in
+        collect_until_semicolon ()
+      | '[' -> (match scan_single_token () with
+          | None    -> raise (ParseTypeSpecAbort spec_string)
+          | Some(t) -> Some(Array(t)))
+      | _   -> raise (ParseTypeSpecAbort spec_string)
   in
   let rec scan_until_eof = fun () ->
     match scan_single_token () with
@@ -98,7 +102,7 @@ let parse_type_specs = fun (spec_string :string) ->
   scan_until_eof ()
 
 (** @raise ParseTypeSpecAbort *)
-let parse_type_spec = fun (spec_string :string) ->
+and parse_type_spec = fun (spec_string :string) ->
   match parse_type_specs spec_string with
   | head :: tail -> head
   | []           -> raise (ParseTypeSpecAbort spec_string)
@@ -111,7 +115,7 @@ module LexicalInfo = struct
     { start_pos : Lexing.position ;
       end_pos   : Lexing.position 
     }
-    
+
   let make_lexical_info = fun (start_pos' :Lexing.position) (end_pos' :Lexing.position) ->
     {start_pos = start_pos';
      end_pos = end_pos'
@@ -120,9 +124,9 @@ module LexicalInfo = struct
   let raise_error_here = fun (lexical_info :t) (message :string) ->
     CreatASTNodeAbort (lexical_info.start_pos, lexical_info.end_pos, message)
 end
-                   
+
 type method_spec = string list * string * type_spec list * type_spec 
-                 
+
 type operand =
   | CaptureName of { lexical_info : LexicalInfo.t; value : string      }
   | Name        of { lexical_info : LexicalInfo.t; value : string list }
@@ -137,7 +141,7 @@ let get_operand_lexical_info = fun (operand :operand) ->
   | String({lexical_info = lexical_info'; _})      -> lexical_info'
   | Numeric({lexical_info = lexical_info'; _})     -> lexical_info'
   | MethodSpec({lexical_info = lexical_info'; _})  -> lexical_info'
-                                                    
+
 exception ParseMethodSpecAbort of string
 
 (** @raise ParseMethodSpecAbort *)
@@ -145,42 +149,45 @@ let parse_method_spec = fun (spec_string :string) ->
   let split_delimiter = Str.regexp "[()]" in
   match Str.split split_delimiter spec_string with
   | [name; param_type; ret_type] -> 
-     (try
-        let parsed_names = parse_name name in
-        let parsed_param_type = parse_type_specs param_type in
-        let parsed_ret_type =
-          if ret_type = "V" then
-            Void
-          else
-            parse_type_spec ret_type
-        in
-        let rec collect_and_return =
-          fun (tokens :string list) (namespace_token :string list) ->
-          match tokens with
-          | head :: []   ->
+    (try
+       let parsed_names = parse_name name in
+       let parsed_param_type = parse_type_specs param_type in
+       let parsed_ret_type =
+         if ret_type = "V" then
+           Void
+         else
+           parse_type_spec ret_type
+       in
+       let rec collect_and_return =
+         fun (tokens :string list) (namespace_token :string list) ->
+           match tokens with
+           | head :: []   ->
              (List.rev namespace_token, head,
               parsed_param_type, parsed_ret_type)
-          | head :: tail -> collect_and_return tail (head :: namespace_token)
-          | []           -> raise (ParseMethodSpecAbort spec_string)
-        in
-        collect_and_return parsed_names []
-      with ParseNameAbort(_)     -> raise (ParseMethodSpecAbort spec_string)
-         | ParseTypeSpecAbort(_) -> raise (ParseMethodSpecAbort spec_string))
+           | head :: tail -> collect_and_return tail (head :: namespace_token)
+           | []           -> raise (ParseMethodSpecAbort spec_string)
+       in
+       collect_and_return parsed_names []
+     with ParseNameAbort(_)     -> raise (ParseMethodSpecAbort spec_string)
+        | ParseTypeSpecAbort(_) -> raise (ParseMethodSpecAbort spec_string))
   | _ -> raise (ParseMethodSpecAbort spec_string)
 
 (** @raise CreatASTNodeAbort *)
 let make_capture_name = fun (start_pos, end_pos) (content :string) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid capture name." content
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     match parse_name content with
     | [ capture_name ] ->
-       CaptureName
-         {lexical_info = lexical_info ;
-          value        = capture_name
-         }
-    | _                -> raise (LexicalInfo.raise_error_here lexical_info content)
-  with ParseNameAbort(_) ->
-    raise (LexicalInfo.raise_error_here lexical_info content)
+      CaptureName
+        {lexical_info = lexical_info ;
+         value        = capture_name
+        }
+    | _                -> error_handler ()
+  with ParseNameAbort(_) -> error_handler ()
 
 (** @raise CreatASTNodeAbort *)
 let make_name = fun (start_pos, end_pos) (content :string) ->
@@ -190,7 +197,8 @@ let make_name = fun (start_pos, end_pos) (content :string) ->
          value        = parse_name content ;
         }
   with ParseNameAbort(_) ->
-    raise (LexicalInfo.raise_error_here lexical_info content)
+    Printf.sprintf "\"%s\" is not a valid name." content
+    |> (fun msg -> (raise (LexicalInfo.raise_error_here lexical_info msg)))
 
 let make_string = fun (start_pos, end_pos) (content :string) ->
   String
@@ -206,7 +214,8 @@ let make_method_spec = fun (start_pos, end_pos) (content :string) ->
           value        = parse_method_spec content
         }
   with ParseMethodSpecAbort(_) ->
-    raise (LexicalInfo.raise_error_here lexical_info content)
+    Printf.sprintf "\"%s\" is not a valid method specifier." content
+    |> (fun msg -> (raise (LexicalInfo.raise_error_here lexical_info msg)))
 
 let make_numeric = fun (start_pos, end_pos) (content :int) ->
   Numeric
@@ -276,9 +285,9 @@ let rec is_expression_extended = fun (expression :expression) ->
   | OperandExpr(_) -> false
   | InvokeExpr(_)  -> true
   | _              -> let lhs = get_expression_lhs expression in
-                      let rhs = get_expression_rhs expression in
-                      (is_expression_extended lhs) || (is_expression_extended rhs)
-                      
+    let rhs = get_expression_rhs expression in
+    (is_expression_extended lhs) || (is_expression_extended rhs)
+
 let get_expression_lexical_info = fun (expression :expression) ->
   match expression with
   | AddExpr({lexical_info = lexical_info'; _})     -> lexical_info'
@@ -296,7 +305,7 @@ let get_expression_lexical_info = fun (expression :expression) ->
   | LEExpr ({lexical_info = lexical_info'; _})     -> lexical_info'
   | OperandExpr({lexical_info = lexical_info'; _}) -> lexical_info'
   | InvokeExpr({lexical_info = lexical_info'; _})  -> lexical_info'                                                                                    
-                                                    
+
 let make_expression_operand = fun (operand :operand) ->
   let lexical_info = get_operand_lexical_info operand in
   let start_pos = lexical_info.LexicalInfo.start_pos in
@@ -336,7 +345,7 @@ let make_expression_div = fun (lhs_expr :expression) (rhs_expr :expression) ->
     DivExpr {lexical_info = lexical_info ; lhs = lhs_expr' ; rhs = rhs_expr'}
   in
   make_expression_binary lhs_expr rhs_expr constructor
-  
+
 let make_expression_rem = fun (lhs_expr :expression) (rhs_expr :expression) ->
   let constructor = fun lexical_info lhs_expr' rhs_expr' ->
     RemExpr {lexical_info = lexical_info ; lhs = lhs_expr' ; rhs = rhs_expr'}
@@ -394,6 +403,10 @@ let make_expression_le = fun (lhs_expr :expression) (rhs_expr :expression) ->
 (** @raise CreatASTNodeAbort *)
 let make_expression_invoke = fun (start_pos, end_pos) target_name (operands :expression list) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid invoke target name."
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info target_name))
+  in
   try
     match parse_name target_name with
     | [ target ] -> InvokeExpr
@@ -401,10 +414,9 @@ let make_expression_invoke = fun (start_pos, end_pos) target_name (operands :exp
                        target = target ;
                        operands = operands
                       }
-    | _          -> raise (LexicalInfo.raise_error_here lexical_info target_name)
-  with ParseNameAbort(_) ->
-    raise (LexicalInfo.raise_error_here lexical_info target_name)
-       
+    | _          -> error_handler ()
+  with ParseNameAbort(_) -> error_handler ()
+
 type instruction =
   | InstNop              of {lexical_info : LexicalInfo.t}
   | InstI2c              of {lexical_info : LexicalInfo.t}
@@ -493,7 +505,7 @@ let get_instruction_lexical_info = fun (instruction :instruction) ->
   | InstInvokevirtual{lexical_info = lexical_info ; _}    -> lexical_info
   | InstInvokenonvirtual{lexical_info = lexical_info ; _} -> lexical_info
   | InstUserDefined{lexical_info = lexical_info ; _}      -> lexical_info
-                                                           
+
 let make_instruction_nop = fun (start_pos, end_pos) ->
   InstNop {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
 
@@ -505,7 +517,7 @@ let make_instruction_new = fun (start_pos, end_pos) ->
 
 let make_instruction_instanceof = fun (start_pos, end_pos) ->
   InstInstanceof {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
-  
+
 let make_instruction_checkcast = fun (start_pos, end_pos) ->
   InstCheckcast {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
 
@@ -565,7 +577,7 @@ let make_instruction_if_icmple = fun (start_pos, end_pos) ->
 
 let make_instruction_if_icmpge = fun (start_pos, end_pos) ->
   InstIf_icmpge {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
-  
+
 let make_instruction_if_icmpne = fun (start_pos, end_pos) ->
   InstIf_icmpne {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
 
@@ -616,7 +628,7 @@ let make_instruction_invokevirtual = fun (start_pos, end_pos) ->
 
 let make_instruction_invokenonvirtual = fun (start_pos, end_pos) ->
   InstInvokenonvirtual {lexical_info = (LexicalInfo.make_lexical_info start_pos end_pos)}
-  
+
 type statement =
   | LiteralLabel        of {lexical_info : LexicalInfo.t ; name : string}
   | CaptureLabel        of {lexical_info : LexicalInfo.t ; name : string}
@@ -633,50 +645,85 @@ let get_statement_lexcial_info = fun (statement :statement) ->
   | BlockOneOrMoreStmt {lexical_info = lexical_info; _}  -> lexical_info
   | BlockZeroOrMoreStmt {lexical_info = lexcial_info; _} -> lexcial_info
   | Instruction {lexical_info = lexical_info; _}         -> lexical_info
-                                                          
+
 (** @raise CreatASTNodeAbort *)
 let make_statement_label = fun end_pos (operand :operand) ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let operand_lexical_info = get_operand_lexical_info operand in
   let start_pos = operand_lexical_info.LexicalInfo.start_pos in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
   match operand with
   | Name {value = names}       ->
-     (match names with
-      | [ name ] -> LiteralLabel {lexical_info = lexical_info ; name = name}
-      | _        -> raise (LexicalInfo.raise_error_here lexical_info ""))
+    (match names with
+     | [ name ] ->
+       if Str.string_match valid_name_regex name 0 then
+         LiteralLabel {lexical_info = lexical_info ; name = name}
+       else
+         Printf.sprintf "\"%s\" is not a valid label name." name
+         |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+     | _        ->
+       let names_to_string = fun (names :string list) ->
+         let buffer = Buffer.create 32 in
+         let rec names_to_string' = fun (names :string list) ->
+           match names with
+           | [] -> Buffer.contents buffer
+           | head :: [] -> Buffer.add_string buffer head ;
+             Buffer.contents buffer
+           | head :: tail -> Buffer.add_string buffer head ;
+             Buffer.add_char buffer '/' ;
+             names_to_string' tail
+         in
+         names_to_string' names
+       in
+       Printf.sprintf "\"%s\" is not a valid label name." (names_to_string names)
+       |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg)))
   | CaptureName {value = name} ->
-     CaptureLabel {lexical_info = lexical_info ; name = name}
-  | _ -> raise (LexicalInfo.raise_error_here lexical_info "")
-       
+    CaptureLabel {lexical_info = lexical_info ; name = name}
+  | _ ->
+    "Label specifier must be a name or a capture name."
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+
+(** @raise CreatASTNodeAbort *)
 let make_statement_block_one_stmt = fun (start_pos, end_pos) (content :string) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid name for block capture." content
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     let names = parse_name content in
     match names with
     | [ name ] -> BlockOneStmt {lexical_info = lexical_info ; name = name}
-    | _        -> raise (LexicalInfo.raise_error_here lexical_info content)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
+    | _        -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
 
+(** @raise CreatASTNodeAbort *)
 let make_statement_block_one_or_more_stmt = fun (start_pos, end_pos) (content :string) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid name for block capture." content
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     let names = parse_name content in
     match names with
     | [ name ] -> BlockOneOrMoreStmt {lexical_info = lexical_info ; name = name}
-    | _        -> raise (LexicalInfo.raise_error_here lexical_info content)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
+    | _        -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
 
+(** @raise CreatASTNodeAbort *)
 let make_statement_block_zero_or_more_stmt = fun (start_pos, end_pos) (content :string) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid name for block capture." content
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     let names = parse_name content in
     match names with
     | [ name ] -> BlockZeroOrMoreStmt {lexical_info = lexical_info ; name = name}
-    | _        -> raise (LexicalInfo.raise_error_here lexical_info content)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
+    | _        -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
 
 let make_statement_instruction_single = fun (instruction :instruction) ->
   let lexical_info = get_instruction_lexical_info instruction in
@@ -713,25 +760,35 @@ let make_statement_instruction_with_operands_infer_pos = fun (instruction :instr
     }
 
 (** @raise CreatASTNodeAbort *)
-let make_statement_instruction_from_operand = fun (operand :operand )->
+let make_statement_instruction_from_operand = fun (operand :operand)->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let operand_lexical_info = get_operand_lexical_info operand in
   let start_pos = operand_lexical_info.LexicalInfo.start_pos in
   let end_pos = operand_lexical_info.LexicalInfo.end_pos in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    "Instruction alias name is not valid."
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   match operand with
   | Name {value = names; _} ->
-     (match names with
-      | [ name ] ->
+    (match names with
+     | [ name ] ->
+       if Str.string_match valid_name_regex name 0 then
          Instruction
            {lexical_info = lexical_info ;
             target = InstUserDefined {lexical_info = lexical_info; value = name} ;
             operands = [] 
            }
-      | _ -> raise (LexicalInfo.raise_error_here lexical_info ""))
-  | _ -> raise (LexicalInfo.raise_error_here lexical_info "")
+       else
+         Printf.sprintf "\"%s\" is not a valid instruction alias name." name
+         |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+     | _ -> error_handler ())
+  | _ -> error_handler ()
 
 (** @raise CreatASTNodeAbort *)
 let make_statement_instruction_from_expressions = fun (expressions :expression list) ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let rec get_last_expression = fun (expressions :expression list) ->
     match expressions with
     | []             -> raise (Failure "implementation error in parser")
@@ -750,22 +807,30 @@ let make_statement_instruction_from_expressions = fun (expressions :expression l
   let start_pos = first_lexical_info.LexicalInfo.start_pos in
   let end_pos = last_lexical_info.LexicalInfo.end_pos in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    "Instruction alias name is not valid."
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   match first_expression with
   | OperandExpr {operand = operand; _} ->
-     (match operand with
-      | Name {value = names; _} ->
-         (match names with
-          | [ name ] ->
-             Instruction
-               {lexical_info = lexical_info ;
-                target = InstUserDefined {lexical_info = lexical_info; value = name} ;
-                operands = args
-               }
-          | _ -> raise (LexicalInfo.raise_error_here lexical_info ""))
-      | _ -> raise (LexicalInfo.raise_error_here lexical_info ""))
-  | _ -> raise (LexicalInfo.raise_error_here lexical_info "")
+    (match operand with
+     | Name {value = names; _} ->
+       (match names with
+        | [ name ] ->
+          if Str.string_match valid_name_regex name 0 then
+            Instruction
+              {lexical_info = lexical_info ;
+               target = InstUserDefined {lexical_info = lexical_info; value = name} ;
+               operands = args
+              }
+          else
+            Printf.sprintf "\"%s\" is not a valid instruction alias name." name
+            |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+        | _ -> error_handler ())
+     | _ -> error_handler ())
+  | _ -> error_handler ()
 
-       
+
 type definition =
   {lexical_info : LexicalInfo.t ;
    name         : string ;
@@ -778,17 +843,24 @@ let get_definition_lexical_info = fun (definition :definition) ->
 
 (** @raise CreatASTNodeAbort *)
 let make_definition = fun (start_pos, end_pos) (name :string) (altrs :instruction list) ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    (Printf.sprintf "\"%s\" is not a valid instruction alias name." name)
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     match parse_name name with
-    | [ name ] -> {lexical_info = lexical_info ;
-                   name = name ;
-                   alternatives = altrs
-                  }
-    | _ -> raise (LexicalInfo.raise_error_here lexical_info name)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
-       
+    | [ name ] ->
+      if Str.string_match valid_name_regex name 0 then
+        {lexical_info = lexical_info ;
+         name = name ;
+         alternatives = altrs
+        }
+      else error_handler ()
+    | _ -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
+
 type pattern =
   {lexical_info     : LexicalInfo.t ;
    name             : string ;
@@ -800,52 +872,59 @@ type pattern =
 
 (** @raise CreatASTNodeAbort *)
 let make_pattern_new = fun (start_pos, end_pos) (name :string) ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    (Printf.sprintf "\"%s\" is not a valid pattern name." name)
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     match parse_name name with
-    | [ name ] -> {lexical_info = lexical_info ;
-                   name = name ;
-                   preconditions = [] ;
-                   definitions = [] ;
-                   capture_patterns = [] ;
-                   rewrite_patterns = []
-                  }
-    | _ -> raise (LexicalInfo.raise_error_here lexical_info name)
-  with ParseNameAbort(_) ->
-    raise (LexicalInfo.raise_error_here lexical_info name)
+    | [ name ] ->
+      if Str.string_match valid_name_regex name 0 then
+        {lexical_info = lexical_info ;
+         name = name ;
+         preconditions = [] ;
+         definitions = [] ;
+         capture_patterns = [] ;
+         rewrite_patterns = []
+        }
+      else error_handler ()
+    | _ -> error_handler ()
+  with ParseNameAbort(_) -> error_handler ()
 
 let make_pattern_add_precondition = fun (pattern :pattern) (precondition :expression) ->
   let {preconditions = preconditions; _} = pattern in
   {pattern with
-    preconditions = preconditions @ [ precondition ]
+   preconditions = preconditions @ [ precondition ]
   }
 
 let make_pattern_add_definition = fun (pattern :pattern) (definition :definition) ->
   let {definitions = definitions; _} = pattern in
   {pattern with
-    definitions = definitions @ [definition]
+   definitions = definitions @ [definition]
   }
 
 let make_pattern_add_capture_pattern = fun (pattern :pattern) (stmt :statement) ->
   let {capture_patterns = capture_patterns; _} = pattern in
   {pattern with
-    capture_patterns = capture_patterns @ [ stmt ]
+   capture_patterns = capture_patterns @ [ stmt ]
   }
 
 let make_pattern_add_rewrite_pattern = fun (pattern :pattern) (stmt :statement) ->
   let {rewrite_patterns = rewrite_patterns; _} = pattern in
   {pattern with
-    rewrite_patterns = rewrite_patterns @ [ stmt ]
+   rewrite_patterns = rewrite_patterns @ [ stmt ]
   }
 
 let make_pattern_finalize = fun (pattern :pattern) end_pos ->
   let {lexical_info = lexical_info; _} = pattern in
   let start_pos = lexical_info.LexicalInfo.start_pos in
   {pattern with
-    lexical_info = LexicalInfo.make_lexical_info start_pos end_pos
+   lexical_info = LexicalInfo.make_lexical_info start_pos end_pos
   }
 
-  
+
 type schema_element =
   | InternalPattern of {lexical_info : LexicalInfo.t; name : string}
   | ExternalPattern of {lexical_info : LexicalInfo.t; name : string}
@@ -857,31 +936,46 @@ let get_schema_element_lexical_info = fun (schema_element :schema_element) ->
 
 (** @raise CreatASTNodeAbort *)
 let make_schema_element_internal = fun (start_pos, end_pos) pattern_name ->
+  let valid_name_regex = Str.regexp "^[a-zA-Z_$][a-zA-Z0-9_$]*$" in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a vaild pattern name." pattern_name
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     match parse_name pattern_name with
-    | [ pattern_name ] -> InternalPattern
-                            {lexical_info = lexical_info ;
-                             name = pattern_name
-                            }
-    | _ -> raise (LexicalInfo.raise_error_here lexical_info pattern_name)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
+    | [ pattern_name ] ->
+      if Str.string_match valid_name_regex pattern_name 0 then
+        InternalPattern
+          {lexical_info = lexical_info ;
+           name = pattern_name
+          }
+      else
+        error_handler ()
+    | _ -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
 
 (** @raise CreatASTNodeAbort *)
 let make_schema_element_external = fun (start_pos, end_pos) pattern_name ->
+  let valid_name_regex = Str.regexp "^[_a-zA-Z][_a-zA-Z0-9]*$" in
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
+  let error_handler = fun () ->
+    Printf.sprintf "\"%s\" is not a valid external pattern name." pattern_name
+    |> (fun msg -> raise (LexicalInfo.raise_error_here lexical_info msg))
+  in
   try
     match parse_name pattern_name with
-    | [ pattern_name ] -> ExternalPattern
-                            {lexical_info = lexical_info ;
-                             name = pattern_name
-                            }
-    | _ -> raise (LexicalInfo.raise_error_here lexical_info pattern_name)
-  with ParseNameAbort(what) ->
-    raise (LexicalInfo.raise_error_here lexical_info what)
+    | [ pattern_name ] ->
+      if Str.string_match valid_name_regex pattern_name 0 then
+        ExternalPattern
+          {lexical_info = lexical_info ;
+           name = pattern_name
+          }
+      else
+        error_handler ()
+    | _ -> error_handler ()
+  with ParseNameAbort(what) -> error_handler ()
 
-       
 type schema =
   {lexical_info : LexicalInfo.t ;
    schema : schema_element list
@@ -890,7 +984,7 @@ type schema =
 let get_schema_lexical_info = fun (schema :schema) ->
   let {lexical_info = lexical_info; _} = schema in
   lexical_info
-  
+
 let make_schema = fun (start_pos, end_pos) (schema :schema_element list) ->
   let lexical_info = LexicalInfo.make_lexical_info start_pos end_pos in
   {lexical_info = lexical_info ;
@@ -908,11 +1002,16 @@ let make_compilation_unit_new = fun () -> {schemas = [] ; patterns = []}
 let make_compilation_unit_add_schema = fun compilation_unit schema ->
   let {schemas = schemas; _} = compilation_unit in
   {compilation_unit with
-    schemas = schema :: schemas ;
+   schemas = schema :: schemas ;
   }
 
 let make_compilation_unit_add_pattern = fun compilation_unit pattern ->
   let {patterns = patterns; _} = compilation_unit in
   {compilation_unit with
-    patterns = pattern :: patterns
+   patterns = pattern :: patterns
+  }
+
+let merge_compilation_unit = fun (unit1 :compilation_unit) (unit2 :compilation_unit) ->
+  {schemas = unit1.schemas @ unit2.schemas ;
+   patterns = unit1.patterns @ unit2.patterns
   }

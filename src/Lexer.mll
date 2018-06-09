@@ -24,7 +24,12 @@ let reset_lexer = fun () ->
   simulate_eol_before_eof := true ;
   entered_curly_bracket := true ;
   ()
-                          
+
+let fix_capture_variable = fun (raw_content :string) ->
+  let regex = Str.regexp "\\[[ ]*\\([a-zA-Z_$][a-zA-Z0-9_$]*\\)[ ]*\\]" in
+  let _ = Str.string_match regex raw_content 0 in
+  Str.matched_group 1 raw_content
+  
 }
 
 let newline = ['\n']
@@ -60,8 +65,6 @@ rule scan = parse
 (* operators *)
 | "("                {OP_PARAM_LEFT        (collect_token_pos lexbuf)}
 | ")"                {OP_PARAM_RIGHT       (collect_token_pos lexbuf)}
-| "["                {OP_SQUARE_LEFT       (collect_token_pos lexbuf)}
-| "]"                {OP_SQUARE_RIGHT      (collect_token_pos lexbuf)}
 | "{"                {entered_curly_bracket := true;  OP_CURLY_LEFT(collect_token_pos lexbuf)}
 | "}"                {entered_curly_bracket := false; OP_CURLY_RIGHT(collect_token_pos lexbuf)}
 | "<"                {OP_ANGULAR_LEFT      (collect_token_pos lexbuf)}
@@ -125,10 +128,11 @@ rule scan = parse
 | "invokevirtual"    {INST_INVOKEVIRTUAL   (collect_token_pos lexbuf)}
 | "invokenonvirtual" {INST_INVOKENONVIRTUAL(collect_token_pos lexbuf)}
 (* literals *)
-| '"' (java_string_content as content) '"' {STRING     (collect_token_pos lexbuf, content)}
-| java_numeric as content                  {NUMERIC    (collect_token_pos lexbuf, int_of_string content)}
-| java_method_spec as content              {METHOD_SPEC(collect_token_pos lexbuf, content)}
-| (java_name (';')?) as content            {NAME       (collect_token_pos lexbuf, content)}
+| '"' (java_string_content as content) '"'      {STRING       (collect_token_pos lexbuf, content)}
+| java_numeric as content                       {NUMERIC      (collect_token_pos lexbuf, int_of_string content)}
+| java_method_spec as content                   {METHOD_SPEC  (collect_token_pos lexbuf, content)}
+| '[' [' ']* (identifier as content) [' ']* ']' {CAPTURE_NAME (collect_token_pos lexbuf, content)}
+| (['[']* java_name [';']?) as content          {NAME         (collect_token_pos lexbuf, content)}
 (* special characters *)
 | whitespace {scan lexbuf}
 | comment    {scan lexbuf}

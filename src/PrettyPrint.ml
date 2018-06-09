@@ -2,9 +2,9 @@ let prettyprint_token_info = fun (token_info :Lexing.position * Lexing.position)
   let start_pos, end_pos = token_info in
   assert (start_pos.Lexing.pos_fname == end_pos.Lexing.pos_fname) ;
   let filename = if (String.length start_pos.Lexing.pos_fname) == 0 then
-                   "*unknown*"
-                 else
-                   start_pos.Lexing.pos_fname
+      "*unknown*"
+    else
+      start_pos.Lexing.pos_fname
   in
   Printf.sprintf "(%d:%d - %d:%d @ %s)"
     start_pos.Lexing.pos_lnum (start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol)
@@ -64,15 +64,14 @@ let prettyprint_token = fun (token :Parser.token) ->
   | Parser.KEYWORD_SCHEMA(pos)        -> Printf.sprintf "KEYWORD_SCHEMA[.schema] %s"    (prettyprint_token_info pos)
   | Parser.KEYWORD_EXTERN(pos)        -> Printf.sprintf "KEYWORD_EXTERN[extern] %s"     (prettyprint_token_info pos)
   (* literals *)
-  | Parser.STRING(pos, value)         -> Printf.sprintf "STRING[%s] %s"      value (prettyprint_token_info pos)
-  | Parser.METHOD_SPEC(pos, value)    -> Printf.sprintf "METHOD_SPEC[%s] %s" value (prettyprint_token_info pos)
-  | Parser.NAME(pos, value)           -> Printf.sprintf "NAME[%s] %s"        value (prettyprint_token_info pos)
-  | Parser.NUMERIC(pos, value)        -> Printf.sprintf "NUMERIC[%d] %s"     value (prettyprint_token_info pos)
+  | Parser.STRING(pos, value)         -> Printf.sprintf "STRING[%s] %s"       value (prettyprint_token_info pos)
+  | Parser.METHOD_SPEC(pos, value)    -> Printf.sprintf "METHOD_SPEC[%s] %s"  value (prettyprint_token_info pos)
+  | Parser.NAME(pos, value)           -> Printf.sprintf "NAME[%s] %s"         value (prettyprint_token_info pos)
+  | Parser.NUMERIC(pos, value)        -> Printf.sprintf "NUMERIC[%d] %s"      value (prettyprint_token_info pos)
+  | Parser.CAPTURE_NAME(pos, value)   -> Printf.sprintf "CAPTURE_NAME[%s] %s" value (prettyprint_token_info pos)
   (* operators *)
   | Parser.OP_PARAM_LEFT(pos)    -> Printf.sprintf "OP_PARAM_LEFT %s"    (prettyprint_token_info pos)
   | Parser.OP_PARAM_RIGHT(pos)   -> Printf.sprintf "OP_PARAM_RIGHT %s"   (prettyprint_token_info pos)
-  | Parser.OP_SQUARE_LEFT(pos)   -> Printf.sprintf "OP_SQUARE_LEFT %s"   (prettyprint_token_info pos)
-  | Parser.OP_SQUARE_RIGHT(pos)  -> Printf.sprintf "OP_SQUARE_RIGHT %s"  (prettyprint_token_info pos)
   | Parser.OP_CURLY_LEFT(pos)    -> Printf.sprintf "OP_CURLY_LEFT %s"    (prettyprint_token_info pos)
   | Parser.OP_CURLY_RIGHT(pos)   -> Printf.sprintf "OP_CURLY_RIGHT %s"   (prettyprint_token_info pos)
   | Parser.OP_ANGULAR_LEFT(pos)  -> Printf.sprintf "OP_ANGULAR_LEFT %s"  (prettyprint_token_info pos)
@@ -96,33 +95,33 @@ let prettyprint_token = fun (token :Parser.token) ->
   (* special symbols *)                       
   | Parser.EOF(pos) -> Printf.sprintf "EOF %s" (prettyprint_token_info pos)
   | Parser.EOL(pos) -> Printf.sprintf "EOL %s" (prettyprint_token_info pos)
-                     
+
 let prettyprint_name = fun (name :string list) ->
   let buffer = Buffer.create 32 in
   let rec prettyprint_name' = fun (name' :string list) ->
     match name' with
     | []           -> Buffer.contents buffer
     | head :: []   -> Buffer.add_string buffer head ;
-                      Buffer.contents buffer
+      Buffer.contents buffer
     | head :: tail -> Buffer.add_string buffer head ;
-                      Buffer.add_char buffer '/' ;
-                      prettyprint_name' tail
+      Buffer.add_char buffer '/' ;
+      prettyprint_name' tail
   in
   prettyprint_name' name
 
 let prettyprint_name_natural = fun (name :string list) ->
-    let buffer = Buffer.create 32 in
+  let buffer = Buffer.create 32 in
   let rec prettyprint_name_natural' = fun (name' :string list) ->
     match name' with
     | []           -> Buffer.contents buffer
     | head :: []   -> Buffer.add_string buffer head ;
-                      Buffer.contents buffer
+      Buffer.contents buffer
     | head :: tail -> Buffer.add_string buffer head ;
-                      Buffer.add_char buffer '.' ;
-                      prettyprint_name_natural' tail
+      Buffer.add_char buffer '.' ;
+      prettyprint_name_natural' tail
   in
   prettyprint_name_natural' name
-                     
+
 let rec prettyprint_type_spec = fun (t :AST.type_spec) ->
   match t with
   | AST.Boolean               -> "Z"
@@ -135,14 +134,14 @@ let rec prettyprint_type_spec = fun (t :AST.type_spec) ->
   | AST.Double                -> "D"
   | AST.Void                  -> "V"
   | AST.ClassSpec(class_name) -> let buffer = Buffer.create 32 in
-                                 Buffer.add_char buffer 'L' ;
-                                 Buffer.add_string buffer (prettyprint_name class_name) ;
-                                 Buffer.add_char buffer ';' ;
-                                 Buffer.contents buffer
+    Buffer.add_char buffer 'L' ;
+    Buffer.add_string buffer (prettyprint_name class_name) ;
+    Buffer.add_char buffer ';' ;
+    Buffer.contents buffer
   | AST.Array(t)              -> let buffer = Buffer.create 32 in
-                                 Buffer.add_char buffer '[' ;
-                                 Buffer.add_string buffer (prettyprint_type_spec t) ;
-                                 Buffer.contents buffer
+    Buffer.add_char buffer '[' ;
+    Buffer.add_string buffer (prettyprint_type_spec t) ;
+    Buffer.contents buffer
 
 let prettyprint_type_specs = fun (t :AST.type_spec list) ->
   let buffer = Buffer.create 32 in
@@ -150,7 +149,7 @@ let prettyprint_type_specs = fun (t :AST.type_spec list) ->
     match t' with
     | []           -> ()
     | head :: tail -> Buffer.add_string buffer (prettyprint_type_spec head) ;
-                      prettyprint_type_specs' tail
+      prettyprint_type_specs' tail
   in
   prettyprint_type_specs' t ;
   Buffer.contents buffer
@@ -167,12 +166,12 @@ let rec prettyprint_type_spec_natural = fun (t :AST.type_spec) ->
   | AST.Double                -> "double"
   | AST.Void                  -> "void"
   | AST.ClassSpec(class_name) -> let buffer = Buffer.create 32 in
-                                 Buffer.add_string buffer (prettyprint_name_natural class_name) ;
-                                 Buffer.contents buffer
+    Buffer.add_string buffer (prettyprint_name_natural class_name) ;
+    Buffer.contents buffer
   | AST.Array(t)              -> let buffer = Buffer.create 32 in
-                                 Buffer.add_string buffer (prettyprint_type_spec_natural t) ;
-                                 Buffer.add_string buffer "[]" ;
-                                 Buffer.contents buffer
+    Buffer.add_string buffer (prettyprint_type_spec_natural t) ;
+    Buffer.add_string buffer "[]" ;
+    Buffer.contents buffer
 
 let prettyprint_type_specs_natural = fun (t :AST.type_spec list) ->
   let buffer = Buffer.create 32 in
@@ -180,10 +179,10 @@ let prettyprint_type_specs_natural = fun (t :AST.type_spec list) ->
     match t' with
     | [] -> ()
     | head :: []   -> Buffer.add_string buffer (prettyprint_type_spec_natural head) ;
-                      ()
+      ()
     | head :: tail -> Buffer.add_string buffer (prettyprint_type_spec_natural head) ;
-                      Buffer.add_string buffer ", " ;
-                      prettyprint_type_specs_natural' tail
+      Buffer.add_string buffer ", " ;
+      prettyprint_type_specs_natural' tail
   in
   prettyprint_type_specs_natural' t ;
   Buffer.contents buffer
@@ -251,21 +250,21 @@ let rec prettyprint_expression = fun (t :AST.expression) ->
   | AST.LEExpr ({lhs = lhs; rhs = rhs; _}) -> prettyprint_binary lhs rhs "<="
   | AST.OperandExpr({operand = operand; _})-> prettyprint_operand operand
   | AST.InvokeExpr({target = target; operands = operands; _}) ->
-     let buffer = Buffer.create 32 in
-     Buffer.add_string buffer target ;
-     Buffer.add_char buffer '(' ;
-     let rec prettyprint_operands = fun (operands :AST.expression list) ->
-       match operands with
-       | head :: []   -> Buffer.add_string buffer (prettyprint_expression head)
-       | head :: tail -> Buffer.add_string buffer (prettyprint_expression head) ;
-                         Buffer.add_string buffer ", " ;
-                         prettyprint_operands tail
-       | []           -> ()
-     in
-     prettyprint_operands operands ;
-     Buffer.add_char buffer ')' ;
-     Buffer.contents buffer
-     
+    let buffer = Buffer.create 32 in
+    Buffer.add_string buffer target ;
+    Buffer.add_char buffer '(' ;
+    let rec prettyprint_operands = fun (operands :AST.expression list) ->
+      match operands with
+      | head :: []   -> Buffer.add_string buffer (prettyprint_expression head)
+      | head :: tail -> Buffer.add_string buffer (prettyprint_expression head) ;
+        Buffer.add_string buffer ", " ;
+        prettyprint_operands tail
+      | []           -> ()
+    in
+    prettyprint_operands operands ;
+    Buffer.add_char buffer ')' ;
+    Buffer.contents buffer
+
 let prettyprint_instruction = fun (instruction :AST.instruction) ->
   match instruction with
   | AST.InstNop(_)                           -> "nop"
@@ -319,26 +318,26 @@ let prettyprint_statement = fun (statement :AST.statement) ->
   | AST.BlockOneOrMoreStmt {name = name; _}  -> Printf.sprintf "< [%s]+ >" name
   | AST.BlockZeroOrMoreStmt {name = name; _} -> Printf.sprintf "< [%s]* >" name
   | AST.Instruction {target = target; operands = operands; _} ->
-     let buffer = Buffer.create 32 in
-     Buffer.add_string buffer (prettyprint_instruction target) ;
-     Buffer.add_char buffer ' ' ;
-     let rec prettyprint_operand = fun (operands :AST.expression list) ->
-       let decorate_expression = fun (expression :AST.expression) ->
-         let prettyprint_result = prettyprint_expression expression in
-         if AST.is_expression_extended expression then
-           Printf.sprintf "{%s}" prettyprint_result
-         else
-           prettyprint_result
-       in
-       match operands with
-       | []           -> ()
-       | head :: []   -> Buffer.add_string buffer (decorate_expression head)
-       | head :: tail -> Buffer.add_string buffer (decorate_expression head) ;
-                         Buffer.add_char buffer ' ' ;
-                         prettyprint_operand tail
-     in
-     prettyprint_operand operands ;
-     Buffer.contents buffer
+    let buffer = Buffer.create 32 in
+    Buffer.add_string buffer (prettyprint_instruction target) ;
+    Buffer.add_char buffer ' ' ;
+    let rec prettyprint_operand = fun (operands :AST.expression list) ->
+      let decorate_expression = fun (expression :AST.expression) ->
+        let prettyprint_result = prettyprint_expression expression in
+        if AST.is_expression_extended expression then
+          Printf.sprintf "{%s}" prettyprint_result
+        else
+          prettyprint_result
+      in
+      match operands with
+      | []           -> ()
+      | head :: []   -> Buffer.add_string buffer (decorate_expression head)
+      | head :: tail -> Buffer.add_string buffer (decorate_expression head) ;
+        Buffer.add_char buffer ' ' ;
+        prettyprint_operand tail
+    in
+    prettyprint_operand operands ;
+    Buffer.contents buffer
 
 let prettyprint_precondition = fun (expression :AST.expression) ->
   Printf.sprintf ".pre %s" (prettyprint_expression expression)
@@ -352,8 +351,8 @@ let prettyprint_definition = fun (definition :AST.definition) ->
     | []           -> ()
     | head :: []   -> Buffer.add_string buffer (prettyprint_instruction head)
     | head :: tail -> Buffer.add_string buffer (prettyprint_instruction head) ;
-                      Buffer.add_string buffer ", " ;
-                      write_alternatives_to_buffer tail
+      Buffer.add_string buffer ", " ;
+      write_alternatives_to_buffer tail
   in
   write_alternatives_to_buffer alternatives ;
   let alternatives_string = Buffer.contents buffer in
@@ -365,23 +364,23 @@ let prettyprint_definition = fun (definition :AST.definition) ->
     let rec print_multipleline = fun (buffer :Buffer.t) (tokens :string list) (len :int)->
       match tokens with
       | []           -> let content = Buffer.contents buffer in
-                        if len <> 0 then
-                          [ content ]
-                        else
-                          []
+        if len <> 0 then
+          [ content ]
+        else
+          []
       | head :: tail -> if (len + String.length head) <= 70 then
-                          if len == 0 then
-                            (Buffer.add_string buffer head ;
-                             print_multipleline buffer tail (String.length head))
-                          else
-                            (Buffer.add_string buffer ", " ;
-                             Buffer.add_string buffer head ;
-                             print_multipleline buffer tail (len + 2 + String.length head))
-                        else
-                          let single_line = Buffer.contents buffer in
-                          let new_buffer = Buffer.create 32 in
-                          Buffer.add_string new_buffer head ;
-                          single_line :: (print_multipleline new_buffer tail (String.length head))
+          if len == 0 then
+            (Buffer.add_string buffer head ;
+             print_multipleline buffer tail (String.length head))
+          else
+            (Buffer.add_string buffer ", " ;
+             Buffer.add_string buffer head ;
+             print_multipleline buffer tail (len + 2 + String.length head))
+        else
+          let single_line = Buffer.contents buffer in
+          let new_buffer = Buffer.create 32 in
+          Buffer.add_string new_buffer head ;
+          single_line :: (print_multipleline new_buffer tail (String.length head))
     in
     let lines = print_multipleline (Buffer.create 32) tokens 0 in
     let buffer = Buffer.create 32 in
@@ -391,39 +390,39 @@ let prettyprint_definition = fun (definition :AST.definition) ->
       | []           -> ()
       | [ line ]     -> Buffer.add_string buffer (Printf.sprintf "    %s\n" line)
       | head :: tail -> Buffer.add_string buffer (Printf.sprintf "    %s,\n" head) ;
-                        print_lines tail
+        print_lines tail
     in
     print_lines lines ;
     Buffer.add_string buffer "  }" ;
     Buffer.contents buffer
-  
+
 let prettyprint_pattern = fun (pattern :AST.pattern) ->
   let buffer = Buffer.create 32 in
   Buffer.add_string buffer (Printf.sprintf ".pattern %s\n" pattern.AST.name) ;
   List.iter
     (fun (definition :AST.definition) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_definition definition)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_definition definition)
+       in Buffer.add_string buffer single_line)
     pattern.AST.definitions ;
   List.iter
     (fun (precondition :AST.expression) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_precondition precondition)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_precondition precondition)
+       in Buffer.add_string buffer single_line)
     pattern.AST.preconditions ;
   List.iter
     (fun (statement :AST.statement) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_statement statement)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_statement statement)
+       in Buffer.add_string buffer single_line)
     pattern.AST.capture_patterns ;
   Buffer.add_string buffer "  =>\n" ;
   List.iter
     (fun (statement :AST.statement) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_statement statement)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_statement statement)
+       in Buffer.add_string buffer single_line)
     pattern.AST.rewrite_patterns ;
   Buffer.add_string buffer ".end" ;
   Buffer.contents buffer
@@ -438,9 +437,9 @@ let prettyprint_schema = fun (schema :AST.schema) ->
   Buffer.add_string buffer ".schema\n" ;
   List.iter
     (fun (schema_element :AST.schema_element) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_schema_element schema_element)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_schema_element schema_element)
+       in Buffer.add_string buffer single_line)
     schema.AST.schema ;
   Buffer.add_string buffer ".end" ;
   Buffer.contents buffer
@@ -449,31 +448,31 @@ let prettyprint_compilation_unit = fun (compilation_unit :AST.compilation_unit) 
   let buffer = Buffer.create 32 in
   List.iter
     (fun (schema :AST.schema) ->
-      let schema_string = prettyprint_schema schema in
-      Buffer.add_string buffer schema_string ;
-      Buffer.add_char buffer '\n' ;
-      Buffer.add_char buffer '\n')
+       let schema_string = prettyprint_schema schema in
+       Buffer.add_string buffer schema_string ;
+       Buffer.add_char buffer '\n' ;
+       Buffer.add_char buffer '\n')
     compilation_unit.AST.schemas ;
   List.iter
     (fun (pattern :AST.pattern) ->
-      let pattern_string = prettyprint_pattern pattern in
-      Buffer.add_string buffer pattern_string ;
-      Buffer.add_char buffer '\n' ;
-      Buffer.add_char buffer '\n')
+       let pattern_string = prettyprint_pattern pattern in
+       Buffer.add_string buffer pattern_string ;
+       Buffer.add_char buffer '\n' ;
+       Buffer.add_char buffer '\n')
     compilation_unit.AST.patterns ;
   Buffer.contents buffer
 
 (* support for xterm coloring *)
 module PrettyPrintColorSchema = struct
   type coloring_schema = {
-      keyword     : string -> string ;
-      variable    : string -> string ;
-      instruction : string -> string ;
-      method_spec : string -> string ;
-      string      : string -> string ;
-      numeric     : string -> string 
-    }
-      
+    keyword     : string -> string ;
+    variable    : string -> string ;
+    instruction : string -> string ;
+    method_spec : string -> string ;
+    string      : string -> string ;
+    numeric     : string -> string 
+  }
+
   let default_color_schema =
     { keyword     = (fun str -> Printf.sprintf "\027[38;5;148m%s\027[0m" str) ;
       variable    = (fun str -> Printf.sprintf "\027[38;5;202m%s\027[0m" str) ;
@@ -517,28 +516,28 @@ let prettyprint_method_spec_color = fun (t :AST.method_spec) ->
 let prettyprint_operand_color = fun (t :AST.operand) ->
   match t with
   | AST.CaptureName(_) ->
-     let variable_decorator =
-       (!prettyprint_color_schema).PrettyPrintColorSchema.variable
-     in variable_decorator (prettyprint_operand t)
+    let variable_decorator =
+      (!prettyprint_color_schema).PrettyPrintColorSchema.variable
+    in variable_decorator (prettyprint_operand t)
   | AST.Name(_) -> prettyprint_operand t
   | AST.String(_) ->
-     let string_decorator =
-       (!prettyprint_color_schema).PrettyPrintColorSchema.string
-     in string_decorator (prettyprint_operand t)
+    let string_decorator =
+      (!prettyprint_color_schema).PrettyPrintColorSchema.string
+    in string_decorator (prettyprint_operand t)
   | AST.Numeric(_) ->
-     let numeric_decorator =
-       (!prettyprint_color_schema).PrettyPrintColorSchema.numeric
-     in numeric_decorator (prettyprint_operand t)
+    let numeric_decorator =
+      (!prettyprint_color_schema).PrettyPrintColorSchema.numeric
+    in numeric_decorator (prettyprint_operand t)
   | AST.MethodSpec(_) ->
-     let method_spec_decorator =
-       (!prettyprint_color_schema).PrettyPrintColorSchema.method_spec
-     in method_spec_decorator (prettyprint_operand t)
+    let method_spec_decorator =
+      (!prettyprint_color_schema).PrettyPrintColorSchema.method_spec
+    in method_spec_decorator (prettyprint_operand t)
 
 let rec prettyprint_expression_color = fun (t :AST.expression) ->
   let prettyprint_binary_expression = fun (lhs :AST.expression) (rhs :AST.expression) (op :string) ->
-      let lhs_prettyprint = prettyprint_expression_color lhs in
-      let rhs_prettyprint = prettyprint_expression_color rhs in
-      Printf.sprintf "(%s%s%s)" lhs_prettyprint op rhs_prettyprint
+    let lhs_prettyprint = prettyprint_expression_color lhs in
+    let rhs_prettyprint = prettyprint_expression_color rhs in
+    Printf.sprintf "(%s%s%s)" lhs_prettyprint op rhs_prettyprint
   in
   match t with
   | AST.AddExpr{lhs = lhs; rhs = rhs; _} -> prettyprint_binary_expression lhs rhs "+"
@@ -556,28 +555,28 @@ let rec prettyprint_expression_color = fun (t :AST.expression) ->
   | AST.LEExpr {lhs = lhs; rhs = rhs; _} -> prettyprint_binary_expression lhs rhs "<="
   | AST.OperandExpr {operand = operand; _} -> prettyprint_operand_color operand
   | AST.InvokeExpr {target = target; operands = operands; _} ->
-     let buffer = Buffer.create 32 in
-     Buffer.add_string buffer target ;
-     Buffer.add_char buffer '(' ;
-     let rec prettyprint_operands = fun (operands :AST.expression list) ->
-       match operands with
-       | head :: []   -> Buffer.add_string buffer (prettyprint_expression_color head)
-       | head :: tail -> Buffer.add_string buffer (prettyprint_expression_color head) ;
-                         Buffer.add_string buffer ", " ;
-                         prettyprint_operands tail
-       | []           -> ()
-     in
-     prettyprint_operands operands ;
-     Buffer.add_char buffer ')' ;
-     Buffer.contents buffer
+    let buffer = Buffer.create 32 in
+    Buffer.add_string buffer target ;
+    Buffer.add_char buffer '(' ;
+    let rec prettyprint_operands = fun (operands :AST.expression list) ->
+      match operands with
+      | head :: []   -> Buffer.add_string buffer (prettyprint_expression_color head)
+      | head :: tail -> Buffer.add_string buffer (prettyprint_expression_color head) ;
+        Buffer.add_string buffer ", " ;
+        prettyprint_operands tail
+      | []           -> ()
+    in
+    prettyprint_operands operands ;
+    Buffer.add_char buffer ')' ;
+    Buffer.contents buffer
 
 let prettyprint_instruction_color = fun (instruction :AST.instruction) ->
   match instruction with
   | AST.InstUserDefined(_) -> prettyprint_instruction instruction
   | _ ->
-     let instruction_decorator =
-       (!prettyprint_color_schema).PrettyPrintColorSchema.instruction
-     in instruction_decorator (prettyprint_instruction instruction)
+    let instruction_decorator =
+      (!prettyprint_color_schema).PrettyPrintColorSchema.instruction
+    in instruction_decorator (prettyprint_instruction instruction)
 
 let prettyprint_statement_color = fun (statement :AST.statement) ->
   let decorate_name_as_variable = fun (name :string) ->
@@ -588,34 +587,34 @@ let prettyprint_statement_color = fun (statement :AST.statement) ->
   match statement with
   | AST.LiteralLabel(_) -> prettyprint_statement statement
   | AST.CaptureLabel{name = name; _} ->
-     Printf.sprintf "%s :"    (decorate_name_as_variable name)
+    Printf.sprintf "%s :"    (decorate_name_as_variable name)
   | AST.BlockOneStmt{name = name; _} ->
-     Printf.sprintf "< %s >"  (decorate_name_as_variable name)
+    Printf.sprintf "< %s >"  (decorate_name_as_variable name)
   | AST.BlockOneOrMoreStmt{name = name; _} ->
-     Printf.sprintf "< %s+ >" (decorate_name_as_variable name)
+    Printf.sprintf "< %s+ >" (decorate_name_as_variable name)
   | AST.BlockZeroOrMoreStmt{name = name; _} ->
-     Printf.sprintf "< %s* >" (decorate_name_as_variable name)
+    Printf.sprintf "< %s* >" (decorate_name_as_variable name)
   | AST.Instruction{target = target; operands = operands; _} ->
-     let buffer = Buffer.create 32 in
-     Buffer.add_string buffer (prettyprint_instruction_color target) ;
-     Buffer.add_char buffer ' ' ;
-     let rec prettyprint_operand_color = fun (operands :AST.expression list) ->
-       let decorate_expression = fun (expression :AST.expression) ->
-         let prettyprint_result = prettyprint_expression_color expression in
-         if AST.is_expression_extended expression then
-           Printf.sprintf "{%s}" prettyprint_result
-         else
-           prettyprint_result
-       in
-       match operands with
-       | []           -> ()
-       | head :: []   -> Buffer.add_string buffer (decorate_expression head)
-       | head :: tail -> Buffer.add_string buffer (decorate_expression head) ;
-                         Buffer.add_char buffer ' ' ;
-                         prettyprint_operand_color tail
-     in
-     prettyprint_operand_color operands ;
-     Buffer.contents buffer 
+    let buffer = Buffer.create 32 in
+    Buffer.add_string buffer (prettyprint_instruction_color target) ;
+    Buffer.add_char buffer ' ' ;
+    let rec prettyprint_operand_color = fun (operands :AST.expression list) ->
+      let decorate_expression = fun (expression :AST.expression) ->
+        let prettyprint_result = prettyprint_expression_color expression in
+        if AST.is_expression_extended expression then
+          Printf.sprintf "{%s}" prettyprint_result
+        else
+          prettyprint_result
+      in
+      match operands with
+      | []           -> ()
+      | head :: []   -> Buffer.add_string buffer (decorate_expression head)
+      | head :: tail -> Buffer.add_string buffer (decorate_expression head) ;
+        Buffer.add_char buffer ' ' ;
+        prettyprint_operand_color tail
+    in
+    prettyprint_operand_color operands ;
+    Buffer.contents buffer 
 
 let prettyprint_precondition_color = fun (expression :AST.expression) ->
   let buffer = Buffer.create 32 in
@@ -636,8 +635,8 @@ let prettyprint_definition_color = fun (definition :AST.definition) ->
     | []           -> ()
     | head :: []   -> Buffer.add_string buffer (prettyprint_instruction_color head)
     | head :: tail -> Buffer.add_string buffer (prettyprint_instruction_color head) ;
-                      Buffer.add_string buffer ", " ;
-                      write_alternatives_to_buffer tail
+      Buffer.add_string buffer ", " ;
+      write_alternatives_to_buffer tail
   in
   write_alternatives_to_buffer alternatives ;
   let alternatives_string = Buffer.contents buffer in
@@ -652,23 +651,23 @@ let prettyprint_definition_color = fun (definition :AST.definition) ->
     let rec print_multipleline = fun (buffer :Buffer.t) (tokens :string list) (len :int)->
       match tokens with
       | []           -> let content = Buffer.contents buffer in
-                        if len <> 0 then
-                          [ content ]
-                        else
-                          []
+        if len <> 0 then
+          [ content ]
+        else
+          []
       | head :: tail -> if (len + String.length head) <= line_break_limit then
-                          if len == 0 then
-                            (Buffer.add_string buffer head ;
-                             print_multipleline buffer tail (String.length head))
-                          else
-                            (Buffer.add_string buffer ", " ;
-                             Buffer.add_string buffer head ;
-                             print_multipleline buffer tail (len + 2 + String.length head))
-                        else
-                          let single_line = Buffer.contents buffer in
-                          let new_buffer = Buffer.create 32 in
-                          Buffer.add_string new_buffer head ;
-                          single_line :: (print_multipleline new_buffer tail (String.length head))
+          if len == 0 then
+            (Buffer.add_string buffer head ;
+             print_multipleline buffer tail (String.length head))
+          else
+            (Buffer.add_string buffer ", " ;
+             Buffer.add_string buffer head ;
+             print_multipleline buffer tail (len + 2 + String.length head))
+        else
+          let single_line = Buffer.contents buffer in
+          let new_buffer = Buffer.create 32 in
+          Buffer.add_string new_buffer head ;
+          single_line :: (print_multipleline new_buffer tail (String.length head))
     in
     let lines = print_multipleline (Buffer.create 32) tokens 0 in
     let buffer = Buffer.create 32 in
@@ -679,7 +678,7 @@ let prettyprint_definition_color = fun (definition :AST.definition) ->
       | []           -> ()
       | [ line ]     -> Buffer.add_string buffer (Printf.sprintf "    %s\n" line)
       | head :: tail -> Buffer.add_string buffer (Printf.sprintf "    %s,\n" head) ;
-                        print_lines tail
+        print_lines tail
     in
     print_lines lines ;
     Buffer.add_string buffer "  }" ;
@@ -694,30 +693,30 @@ let prettyprint_pattern_color = fun (pattern :AST.pattern) ->
   Buffer.add_string buffer (Printf.sprintf " %s\n" pattern.AST.name) ;
   List.iter
     (fun (definition :AST.definition) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_definition_color definition)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_definition_color definition)
+       in Buffer.add_string buffer single_line)
     pattern.AST.definitions ;
   List.iter
     (fun (precondition :AST.expression) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_precondition_color precondition)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_precondition_color precondition)
+       in Buffer.add_string buffer single_line)
     pattern.AST.preconditions ;
   List.iter
     (fun (statement :AST.statement) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_statement_color statement)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_statement_color statement)
+       in Buffer.add_string buffer single_line)
     pattern.AST.capture_patterns ;
   Buffer.add_string buffer "  " ;
   Buffer.add_string buffer (keyword_decorator "=>") ; 
   Buffer.add_char buffer '\n' ;
   List.iter
     (fun (statement :AST.statement) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_statement_color statement)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_statement_color statement)
+       in Buffer.add_string buffer single_line)
     pattern.AST.rewrite_patterns ;
   Buffer.add_string buffer (keyword_decorator ".end") ;
   Buffer.contents buffer
@@ -729,7 +728,7 @@ let prettyprint_schema_element_color = fun (schema_element :AST.schema_element) 
   match schema_element with
   | AST.InternalPattern {name = name; _} -> name
   | AST.ExternalPattern {name = name; _} ->     
-     Printf.sprintf "%s %s" (keyword_decorator ".extern") name
+    Printf.sprintf "%s %s" (keyword_decorator ".extern") name
 
 let prettyprint_schema_color = fun (schema :AST.schema) ->
   let keyword_decorator =
@@ -739,9 +738,9 @@ let prettyprint_schema_color = fun (schema :AST.schema) ->
   Buffer.add_string buffer (Printf.sprintf "%s\n" (keyword_decorator ".schema"));
   List.iter
     (fun (schema_element :AST.schema_element) ->
-      let single_line =
-        Printf.sprintf "  %s\n" (prettyprint_schema_element_color schema_element)
-      in Buffer.add_string buffer single_line)
+       let single_line =
+         Printf.sprintf "  %s\n" (prettyprint_schema_element_color schema_element)
+       in Buffer.add_string buffer single_line)
     schema.AST.schema ;
   Buffer.add_string buffer (Printf.sprintf "%s" (keyword_decorator ".end")) ;
   Buffer.contents buffer
@@ -750,16 +749,16 @@ let prettyprint_compilation_unit_color = fun (compilation_unit :AST.compilation_
   let buffer = Buffer.create 32 in
   List.iter
     (fun (schema :AST.schema) ->
-      let schema_string = prettyprint_schema_color schema in
-      Buffer.add_string buffer schema_string ;
-      Buffer.add_char buffer '\n' ;
-      Buffer.add_char buffer '\n')
+       let schema_string = prettyprint_schema_color schema in
+       Buffer.add_string buffer schema_string ;
+       Buffer.add_char buffer '\n' ;
+       Buffer.add_char buffer '\n')
     compilation_unit.AST.schemas ;
   List.iter
     (fun (pattern :AST.pattern) ->
-      let pattern_string = prettyprint_pattern_color pattern in
-      Buffer.add_string buffer pattern_string ;
-      Buffer.add_char buffer '\n' ;
-      Buffer.add_char buffer '\n')
+       let pattern_string = prettyprint_pattern_color pattern in
+       Buffer.add_string buffer pattern_string ;
+       Buffer.add_char buffer '\n' ;
+       Buffer.add_char buffer '\n')
     compilation_unit.AST.patterns ;
   Buffer.contents buffer
