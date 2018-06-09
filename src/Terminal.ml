@@ -91,7 +91,12 @@ let tailor_string = fun (buffer :Buffer.t) (start_pos :Lexing.position) (end_pos
   Buffer.add_string buffer pre_underline ;
   Buffer.add_string buffer (ANSITerminal.sprintf [ANSITerminal.Underlined] "%s" in_underline) ;
   Buffer.add_string buffer post_underline ;
-  Buffer.contents buffer
+  let contents = Buffer.contents buffer in 
+  let content_lines = Str.split (Str.regexp "\n") contents in
+  match content_lines with
+  | []        -> raise (Failure "unreachable code")
+  | [ line ]  -> String.concat "" [ line; ANSITerminal.sprintf [ ANSITerminal.Reset ] "" ]
+  | line :: _ -> String.concat "" [ line; ANSITerminal.sprintf [ ANSITerminal.Reset ] " ..." ]
 
 let raise_error = fun (terminal :terminal) (positions :(Lexing.position * Lexing.position) list) (info :string) ->
   let buffer = Buffer.create 32 in
@@ -104,7 +109,7 @@ let raise_error = fun (terminal :terminal) (positions :(Lexing.position * Lexing
       let file_name = get_input_name_from_position terminal start_pos in
       let line_number = start_pos.Lexing.pos_lnum in
       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
-      Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+      Buffer.add_string buffer (Printf.sprintf "In File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
       Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
       Buffer.add_char buffer '\n' ;
       print_code_context tail
@@ -124,7 +129,7 @@ let raise_warning = fun (terminal :terminal) (positions :(Lexing.position * Lexi
       let file_name = get_input_name_from_position terminal start_pos in
       let line_number = start_pos.Lexing.pos_lnum in
       let char_number = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol + 1 in
-      Buffer.add_string buffer (Printf.sprintf "File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
+      Buffer.add_string buffer (Printf.sprintf "In File \"%s\", line %d, start from character %d:\n" file_name line_number char_number) ;
       Buffer.add_string buffer (tailor_string (get_input_buffer_from_position terminal start_pos) start_pos end_pos) ;
       Buffer.add_char buffer '\n' ;
       print_code_context tail
