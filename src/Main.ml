@@ -54,6 +54,7 @@ let main =
     Printf.printf "Weeding...\n" ;
 
     WeedingDuplicatePatternName.apply ast ;
+    WeedingDuplicateAliasName.apply ast ;
 
     PrettyPrint.prettyprint_compilation_unit_color ast
     |> Printf.printf "%s"

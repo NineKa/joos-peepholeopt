@@ -17,7 +17,9 @@ let make_new_exception_manager = fun () ->
   let new_exception_manager = ref [] in
   new_exception_manager
 
-let add_new_exception_site = fun (manager :exception_site_manager) (site :exception_site) ->
+let add_new_exception_site = fun 
+  (manager :exception_site_manager) 
+  (site    :exception_site) ->
   manager := (!manager) @ [ site ] ;
   ()
 
@@ -51,12 +53,14 @@ let make_new_exception_site = fun
 let get_exception_site_list = fun (manager :exception_site_manager) ->
   !manager
 
-let exception_site_manager_error_barrier = fun (manager :exception_site_manager) ->
+let exception_site_manager_error_barrier = fun 
+  (manager :exception_site_manager) ->
   match has_error_exception_site manager with
   | true  -> raise_exception_manager manager
   | false -> ()
 
-let exception_site_manager_warning_barrier = fun (manager :exception_site_manager) ->
+let exception_site_manager_warning_barrier = fun 
+  (manager :exception_site_manager) ->
   match has_warning_exception_site manager with
   | true  -> raise_exception_manager manager
   | false -> ()
@@ -65,3 +69,12 @@ let exception_site_manager_barrier = fun (manager : exception_site_manager) ->
   match has_exception_site manager with
   | true  -> raise_exception_manager manager
   | false -> ()
+
+let merge_exception_managers = fun (managers :exception_site_manager list) ->
+  let result_manager = make_new_exception_manager () in 
+  managers
+  |> List.iter (fun (manager :exception_site_manager) ->
+      get_exception_site_list manager 
+      |> List.iter (fun (site :exception_site) -> 
+          add_new_exception_site result_manager site)) ;
+  result_manager

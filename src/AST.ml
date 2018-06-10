@@ -16,7 +16,9 @@ exception ParseNameAbort of string
 
 (** @raise ParseNameAbort *)  
 let rec parse_name = fun (name :string) ->
+  (* relax constrains on java class names     *)
   let type_descriptor_regex_class = Str.regexp "^L\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*;$" in
+  (* relax constrains on caputre name tokens  *)
   let type_descriptor_regex_array = Str.regexp "^[[]+\\([a-zA-Z_$][a-zA-Z0-9_$]*[/]\\)*[a-zA-Z_$][a-zA-Z0-9_$]*[;]?$" in
   if (Str.string_match type_descriptor_regex_class name 0) || (Str.string_match type_descriptor_regex_array name 0) then
     try

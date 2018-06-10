@@ -1,19 +1,19 @@
 let pass_name = __FILE__
 
-let collect_distinct_pattern_name = fun (unit :AST.compilation_unit) ->
-  let rec collect_distinct_pattern_name' = fun
+let collect_distinct_pattern_names = fun (unit :AST.compilation_unit) ->
+  let rec collect_distinct_pattern_names' = fun
     (patterns       :AST.pattern list)
     (distinct_names :string list) ->
     match patterns with
     | pattern :: rest ->
       let {AST.name = name; _} = pattern in
       if List.exists (fun name' -> name' = name) distinct_names then
-        collect_distinct_pattern_name' rest distinct_names
+        collect_distinct_pattern_names' rest distinct_names
       else
-        collect_distinct_pattern_name' rest (name :: distinct_names)
+        collect_distinct_pattern_names' rest (name :: distinct_names)
     | _               -> distinct_names
   in
-  collect_distinct_pattern_name' unit.AST.patterns []
+  collect_distinct_pattern_names' unit.AST.patterns []
 
 let check_pattern_name_uniqueness = fun
   (unit :AST.compilation_unit)
@@ -33,7 +33,7 @@ let check_pattern_name_uniqueness = fun
            (start_pos, end_pos))
         patterns_with_given_name
     in
-    let message = Printf.sprintf "Found Duplicate Pattern \"%s\"." name in
+    let message = Printf.sprintf "Found duplicate pattern \"%s\"." name in
     Some
       {PassFailed.pass_name = pass_name ;
        PassFailed.reference_sites = reference_sites ;
@@ -43,7 +43,7 @@ let check_pattern_name_uniqueness = fun
 
 let apply = fun (unit :AST.compilation_unit) ->
   let manager = PassFailed.make_new_exception_manager () in
-  collect_distinct_pattern_name unit
+  collect_distinct_pattern_names unit
   |> List.iter
     (fun name ->
        match check_pattern_name_uniqueness unit name with
@@ -51,3 +51,4 @@ let apply = fun (unit :AST.compilation_unit) ->
        | Some exception_site ->
          PassFailed.add_new_exception_site manager exception_site) ;
   PassFailed.exception_site_manager_barrier manager ;
+  ()
